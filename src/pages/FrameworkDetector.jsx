@@ -12,6 +12,7 @@ import {
   Code2,
   Layers,
   CheckCircle2,
+  SearchX,
 } from 'lucide-react'
 import { SyncLoader } from 'react-spinners'
 import PageHeader from '../components/ui/PageHeader'
@@ -321,7 +322,7 @@ export default function FrameworkDetector() {
     <div className="mx-auto px-5 md:px-10 py-8 font-poppins">
       <PageHeader
         title="Framework Detector"
-        description="Detect the hosting platform, web framework, CDN, or deployment stack behind any website."
+        description="Detect the hosting platform, frontend framework, CDN, or deployment stack behind any website."
         badge="beta"
       />
 
@@ -384,7 +385,7 @@ export default function FrameworkDetector() {
       {/* Results Table */}
       {results && !loading && (
         <div className="flex flex-col gap-4">
-          {strong.length > 0 ? (
+          {results.length > 0 ? (
             <div className="rounded-2xl border border-borderColor bg-backgroundCard overflow-hidden shadow-sm">
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
@@ -397,7 +398,7 @@ export default function FrameworkDetector() {
                     </tr>
                   </thead>
                   <tbody>
-                    {strong.map((r, index) => (
+                    {results.map((r, index) => (
                       <TechTableRow 
                         key={r.sig.id} 
                         result={r} 
@@ -410,34 +411,13 @@ export default function FrameworkDetector() {
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center py-12 text-center rounded-2xl bg-backgroundCard border border-borderColor">
-              <ShieldAlert size={28} className="text-accent mx-auto mb-2.5" />
+              <SearchX size={28} className="text-accent mx-auto mb-2.5" />
               <p className="text-sm text-textHeader font-medium m-0 mb-1">No known technologies detected</p>
               <p className="text-xs text-text m-0 max-w-sm">
                 This domain appears to use generic or custom infrastructure with no high-confidence fingerprints.
               </p>
             </div>
           )}
-
-          {/* Weak / Faint Signals Table Section */}
-          {weak.length > 0 && (
-            <div className="mt-4">
-              <p className="text-[11px] font-semibold tracking-wide uppercase text-text m-0 mb-2.5">
-                Faint Signals
-              </p>
-              <div className="rounded-2xl border border-borderColor bg-backgroundCard overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse">
-                    <tbody>
-                      {weak.map(r => (
-                        <TechTableRow key={r.sig.id} result={r} />
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          )}
-
         </div>
       )}
 
