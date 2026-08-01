@@ -68,12 +68,17 @@ const categories = [
       { id: 'tailwind-shadow-generator', label: 'Tailwind Shadow Generator', icon: BoxSelect },
     ],
   },
-  {
+{
     label: 'Network',
     tools: [
       { id: 'ip-lookup', label: 'IP Address Lookup', icon: MapPin },
       { id: 'dns-lookup', label: 'DNS Lookup', icon: Globe },
       { id: 'whois-lookup', label: 'WHOIS Lookup', icon: ScrollText },
+    ],
+  },
+  {
+    label: 'Web & Performance',
+    tools: [
       { id: 'pagespeed-insights', label: 'PageSpeed Insights', icon: Gauge },
       { id: 'framework-detector', label: 'Framework Detector', icon: Cpu },
     ],
