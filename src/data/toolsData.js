@@ -20,7 +20,9 @@ import {
   Lock,
   ScrollText,
   Star,
-  Gauge
+  Gauge,
+  Fingerprint,
+  Cpu
 } from 'lucide-react'
 
 export const tools = [
@@ -144,6 +146,12 @@ export const tools = [
     icon: Gauge,
     label: 'PageSpeed Insights',
     description: 'Full Lighthouse + CrUX field data audit: performance, accessibility, best practices, and SEO with opportunities, diagnostics, and resource breakdowns.',
+  },
+  {
+    id: 'framework-detector',
+    icon: Cpu,
+    label: 'Framework Detector',
+    description: 'Instantly detect the hosting platform, JS framework, CDN, and deployment stack behind any website using automated DNS and script fingerprinting.',
   },
 
   // Security

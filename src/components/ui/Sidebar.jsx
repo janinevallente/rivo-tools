@@ -29,7 +29,9 @@ import {
   Sun,
   Moon,
   Star,
-  Gauge
+  Gauge,
+  Fingerprint,
+  Cpu
 } from 'lucide-react'
 import { useTheme } from '../themes/ThemeContext'
 
@@ -73,6 +75,7 @@ const categories = [
       { id: 'dns-lookup', label: 'DNS Lookup', icon: Globe },
       { id: 'whois-lookup', label: 'WHOIS Lookup', icon: ScrollText },
       { id: 'pagespeed-insights', label: 'PageSpeed Insights', icon: Gauge },
+      { id: 'framework-detector', label: 'Framework Detector', icon: Cpu },
     ],
   },
   {
