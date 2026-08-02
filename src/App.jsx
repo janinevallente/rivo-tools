@@ -94,7 +94,7 @@ function App() {
     <AntThemeProvider>
       <div className="flex min-h-screen bg-backgroundColor">
         <Sidebar activeTool={activeTool} onSelectTool={navigateTo} />
-        <div className="flex flex-col flex-1 min-w-0 pt-14 lg:pt-0">
+        <div className="flex flex-col flex-1 min-w-0 pt-8 lg:pt-0">
           <main className="flex-1">
             <Suspense fallback={<PageLoader />}>
               {renderPage()}
