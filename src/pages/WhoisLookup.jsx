@@ -499,16 +499,6 @@ export default function WhoisLookup() {
         description="Look up domain registration via RDAP — works with both domain names and IPv4 addresses."
       />
 
-      {/* Privacy notice */}
-      <div className="mb-5 flex items-start gap-2.5 p-3.5 rounded-xl bg-accentBg border border-accentBorder">
-        <ShieldCheck size={15} className="text-accent shrink-0 mt-0.5" />
-        <p className="text-xs text-text m-0 leading-relaxed">
-          <span className="text-accent font-semibold">Privacy-first.</span>{' '}
-          Lookups query <span className="text-textHeader font-medium">rdap.org</span> directly from
-          your browser. Byteflow never sees or logs your queries.
-        </p>
-      </div>
-
       {/* Search bar */}
       <div className="flex gap-2 mb-6">
         <div className="relative flex-1">
