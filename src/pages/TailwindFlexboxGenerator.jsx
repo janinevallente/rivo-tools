@@ -140,7 +140,7 @@ export default function TailwindFlexboxGenerator() {
             description="Controls the direction of flex items in the container"
             docsUrl="https://tailwindcss.com/docs/flex-direction"
           >
-            <Select value={direction} onChange={setDirection} options={DIRECTION_OPTS} className="byteflow-select w-full" popupClassName="byteflow-select-dropdown" />
+            <Select value={direction} onChange={setDirection} options={DIRECTION_OPTS} className="rivo-select w-full" popupClassName="rivo-select-dropdown" />
           </ControlRow>
 
           <ControlRow
@@ -148,7 +148,7 @@ export default function TailwindFlexboxGenerator() {
             description="Controls alignment of items along the main axis"
             docsUrl="https://tailwindcss.com/docs/justify-content"
           >
-            <Select value={justify} onChange={setJustify} options={JUSTIFY_OPTS} className="byteflow-select w-full" popupClassName="byteflow-select-dropdown" />
+            <Select value={justify} onChange={setJustify} options={JUSTIFY_OPTS} className="rivo-select w-full" popupClassName="rivo-select-dropdown" />
           </ControlRow>
 
           <ControlRow
@@ -156,7 +156,7 @@ export default function TailwindFlexboxGenerator() {
             description="Controls alignment of items along the cross axis"
             docsUrl="https://tailwindcss.com/docs/align-items"
           >
-            <Select value={align} onChange={setAlign} options={ALIGN_OPTS} className="byteflow-select w-full" popupClassName="byteflow-select-dropdown" />
+            <Select value={align} onChange={setAlign} options={ALIGN_OPTS} className="rivo-select w-full" popupClassName="rivo-select-dropdown" />
           </ControlRow>
 
           <ControlRow
@@ -164,7 +164,7 @@ export default function TailwindFlexboxGenerator() {
             description="Controls whether flex items wrap onto multiple lines"
             docsUrl="https://tailwindcss.com/docs/flex-wrap"
           >
-            <Select value={wrap} onChange={setWrap} options={WRAP_OPTS} className="byteflow-select w-full" popupClassName="byteflow-select-dropdown" />
+            <Select value={wrap} onChange={setWrap} options={WRAP_OPTS} className="rivo-select w-full" popupClassName="rivo-select-dropdown" />
           </ControlRow>
 
           <ControlRow
@@ -172,7 +172,7 @@ export default function TailwindFlexboxGenerator() {
             description="Controls spacing between flex items"
             docsUrl="https://tailwindcss.com/docs/gap"
           >
-            <Select value={gap} onChange={setGap} options={GAP_OPTS} className="byteflow-select w-full" popupClassName="byteflow-select-dropdown" />
+            <Select value={gap} onChange={setGap} options={GAP_OPTS} className="rivo-select w-full" popupClassName="rivo-select-dropdown" />
           </ControlRow>
 
           {/* Number of items without swatches or native spinners */}
@@ -211,7 +211,7 @@ export default function TailwindFlexboxGenerator() {
             {responsive && (
               <div className="flex flex-col gap-3">
                 <ControlRow label="Breakpoint">
-                  <Select value={bp} onChange={setBp} options={BP_OPTS} className="byteflow-select w-full" popupClassName="byteflow-select-dropdown" />
+                  <Select value={bp} onChange={setBp} options={BP_OPTS} className="rivo-select w-full" popupClassName="rivo-select-dropdown" />
                 </ControlRow>
                 <div className="grid grid-cols-1 gap-3">
                   {[
@@ -227,8 +227,8 @@ export default function TailwindFlexboxGenerator() {
                         onChange={set}
                         options={[DEFAULT_OPT, ...opts]}
                         placeholder="Default"
-                        className="byteflow-select w-full"
-                        popupClassName="byteflow-select-dropdown"
+                        className="rivo-select w-full"
+                        popupClassName="rivo-select-dropdown"
                         allowClear
                       />
                     </ControlRow>

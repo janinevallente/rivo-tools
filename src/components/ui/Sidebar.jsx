@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import Logo from "../../assets/logo.webp"
 import { Tooltip } from 'antd'
 import { 
   Layers,  
@@ -147,10 +148,10 @@ export default function Sidebar({ activeTool, onSelectTool }) {
             onClick={() => handleSelect(null)}
             className="flex items-center gap-2 font-semibold text-base text-textHeader bg-transparent border-none cursor-pointer p-0"
           >
-            <span className="bg-accent rounded-lg w-7 h-7 flex items-center justify-center shrink-0">
-              <Layers size={15} color="white" />
-            </span>
-            Byteflow
+            <div className="w-7 h-7 flex items-center justify-center shrink-0">
+              <img className="rounded-lg" src={Logo} />
+            </div>
+            Rivo
           </button>
           <div className="flex items-center gap-1">
             <button
@@ -222,12 +223,12 @@ export default function Sidebar({ activeTool, onSelectTool }) {
             ${collapsed ? 'px-[17px] justify-center' : 'px-4'}`}
           title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
-          <span className="bg-accent rounded-lg w-[30px] h-[30px] flex items-center justify-center shrink-0">
-            <Layers size={16} color="white" />
-          </span>
+          <div className="w-[30px] h-[30px] flex items-center justify-center shrink-0">
+             <img className="rounded-lg" src={Logo} />
+          </div>
           {!collapsed && (
             <div className="flex flex-col items-start leading-none">
-              <span className="text-textHeader font-semibold text-[15px] whitespace-nowrap">Byteflow</span>
+              <span className="text-textHeader font-semibold text-[15px] whitespace-nowrap">Rivo</span>
             </div>
           )}
         </button>

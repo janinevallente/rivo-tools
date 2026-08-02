@@ -5,7 +5,7 @@ export default function Home({ onSelectTool }) {
     <div className="mx-auto px-5 md:px-10 pt-8 pb-10 font-poppins">
       <div className="text-left mb-10">
         <h1 className="text-4xl font-bold mb-4 text-textHeader tracking-tight leading-tight">
-          Byteflow
+          Rivo
         </h1>
         <p className="text-text text-[15px] leading-relaxed">
             A growing collection of fast, privacy-first tech utilities that run entirely in your browser.
@@ -36,7 +36,7 @@ export default function Home({ onSelectTool }) {
         <h2 className="text-xl font-bold text-textHeader mb-4">About</h2>
 
         <p className="text-text text-[14px] leading-relaxed mb-4 max-w-4xl">
-          Byteflow started as a handful of image and color utilities and has grown into a full toolbox for
+          Rivo started as a handful of image and color utilities and has grown into a full toolbox for
           the modern web — Tailwind helpers, network and performance diagnostics, security tools, and quick
           references, all in one place.
         </p>
@@ -44,13 +44,13 @@ export default function Home({ onSelectTool }) {
         <p className="text-text text-[14px] leading-relaxed mb-4 max-w-4xl">
           Most tools run entirely in your browser: nothing you feed them ever leaves your machine. A few —
           like DNS, WHOIS, IP, and PageSpeed Insights lookups — talk directly to the relevant public API
-          from your browser to fetch real data. Either way, requests never pass through Byteflow's own
+          from your browser to fetch real data. Either way, requests never pass through Rivo's own
           servers, so there's nothing of yours to store, log, or lose.
         </p>
 
         <p className="text-text text-[14px] leading-relaxed mb-8 max-w-4xl">
           Built from a love for the real web: open, experimental, and endlessly creative.
-          Byteflow exists to make every tech enthusiast work a little faster, clearer, and more enjoyable.
+          Rivo exists to make every tech enthusiast work a little faster, clearer, and more enjoyable.
         </p>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 mb-8 max-w-4xl">
@@ -69,12 +69,12 @@ export default function Home({ onSelectTool }) {
           <div>
             <h3 className="text-sm font-semibold text-textHeader mb-2">Source</h3>
             <a
-              href="https://github.com/janinevallente/byteflow"
+              href="https://github.com/janinevallente/rivo-tools"
               target="_blank"
               rel="noopener noreferrer"
               className="text-accent text-sm hover:opacity-80 transition-opacity"
             >
-              janinevallente/byteflow
+              janinevallente/rivo-tools
             </a>
           </div>
         </div>

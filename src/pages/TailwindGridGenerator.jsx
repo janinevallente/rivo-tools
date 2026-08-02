@@ -156,8 +156,8 @@ export default function TailwindGridGenerator() {
               value={flow}
               onChange={setFlow}
               options={FLOW_OPTIONS}
-              className="byteflow-select w-full"
-              popupClassName="byteflow-select-dropdown"
+              className="rivo-select w-full"
+              popupClassName="rivo-select-dropdown"
             />
           </div>
 
@@ -169,8 +169,8 @@ export default function TailwindGridGenerator() {
                 value={justify}
                 onChange={setJustify}
                 options={JUSTIFY_OPTIONS}
-                className="byteflow-select w-full"
-                popupClassName="byteflow-select-dropdown"
+                className="rivo-select w-full"
+                popupClassName="rivo-select-dropdown"
               />
             </div>
             <div>
@@ -179,8 +179,8 @@ export default function TailwindGridGenerator() {
                 value={align}
                 onChange={setAlign}
                 options={ALIGN_OPTIONS}
-                className="byteflow-select w-full"
-                popupClassName="byteflow-select-dropdown"
+                className="rivo-select w-full"
+                popupClassName="rivo-select-dropdown"
               />
             </div>
           </div>

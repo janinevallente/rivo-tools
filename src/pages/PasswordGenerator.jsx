@@ -177,7 +177,7 @@ export default function PasswordGenerator() {
               <h3 className="text-sm font-semibold text-textHeader m-0">Safety Note</h3>
             </div>
             <p className="text-text text-sm leading-relaxed m-0">
-              Byteflow uses <code className="px-1.5 py-0.5 rounded-md bg-accentBg border border-accentBorder text-accent text-xs font-mono">window.crypto.getRandomValues</code> for true cryptographic randomness. Unlike standard random functions, this is safe for generating sensitive passwords and keys.
+              Rivo uses <code className="px-1.5 py-0.5 rounded-md bg-accentBg border border-accentBorder text-accent text-xs font-mono">window.crypto.getRandomValues</code> for true cryptographic randomness. Unlike standard random functions, this is safe for generating sensitive passwords and keys.
             </p>
           </div>
 

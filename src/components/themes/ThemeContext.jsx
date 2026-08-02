@@ -1,13 +1,13 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react'
 
 const ThemeContext = createContext(null)
-const STORAGE_KEY = 'byteflow-theme'
+const STORAGE_KEY = 'rivo-theme'
 
 function getInitialTheme() {
   if (typeof window === 'undefined') return 'dark'
   const stored = window.localStorage.getItem(STORAGE_KEY)
   if (stored === 'light' || stored === 'dark') return stored
-  // Byteflow has always shipped as a dark-first app; only default to light
+  // Rivo has always shipped as a dark-first app; only default to light
   // when the user's OS explicitly prefers light AND they haven't chosen yet.
   const prefersLight = window.matchMedia?.('(prefers-color-scheme: light)').matches
   return prefersLight ? 'light' : 'dark'
