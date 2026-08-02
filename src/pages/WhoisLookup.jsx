@@ -1,18 +1,13 @@
 import { useState, useCallback, useRef } from 'react'
 import {
-  ScrollText,
   Search,
   Copy,
-  Check,
   Loader2,
   ShieldCheck,
-  Building2,
-  UserRound,
-  ChevronDown,
-  ChevronUp,
   Globe,
   CircleX,
   MapPin,
+  TerminalSquare,
 } from 'lucide-react'
 import { SyncLoader } from 'react-spinners'
 import PageHeader from '../components/ui/PageHeader'
@@ -21,6 +16,8 @@ import { getRdapRequest } from '../api/apiClient'
 // RDAP endpoints
 const RDAP_DOMAIN_BOOTSTRAP = 'https://rdap.org/domain/' //for domain query
 const RDAP_IP_BOOTSTRAP = 'https://rdap.org/ip/' //for ip query
+
+const REDACTED_LABEL = 'REDACTED FOR PRIVACY'
 
 // Validation functions
 function isValidHostname(h) {
@@ -70,7 +67,11 @@ function findEventDate(events = [], action) {
 function formatDate(iso) {
   if (!iso) return null
   try {
-    return new Date(iso).toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\//g, '-')
+    return new Date(iso).toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: '2-digit', 
+      year: 'numeric' 
+    })
   } catch {
     return iso
   }
@@ -80,8 +81,12 @@ function isRedacted(value) {
   return typeof value === 'string' && /redact|privacy|withheld|not\s*disclosed/i.test(value)
 }
 
-function realValue(value) {
-  return isRedacted(value) ? undefined : value
+// Returns the value as-is, REDACTED_LABEL if it's explicitly marked redacted,
+// or null if the field simply wasn't provided at all (caller decides what to
+// do with "not provided" — usually omit the line).
+function fieldOrRedacted(value) {
+  if (value === undefined || value === null || value === '') return null
+  return isRedacted(value) ? REDACTED_LABEL : value
 }
 
 // Capitalize first letter of each word
@@ -91,55 +96,6 @@ function capitalizeWords(str) {
     if (word.length === 0) return word
     return word.charAt(0).toUpperCase() + word.slice(1)
   }).join(' ')
-}
-
-// Get color for status based on status type
-function getStatusColor(status) {
-  const statusLower = status.toLowerCase()
-  
-  // Active/OK statuses - green
-  if (statusLower.includes('ok') || 
-      statusLower.includes('active') || 
-      statusLower.includes('verified')) {
-    return 'bg-green-500/10 text-green-400 border-green-500/20'
-  }
-  
-  // Prohibited/Restricted statuses - red
-  if (statusLower.includes('prohibited') || 
-      statusLower.includes('blocked') || 
-      statusLower.includes('locked') ||
-      statusLower.includes('hold')) {
-    return 'bg-red-500/10 text-red-400 border-red-500/20'
-  }
-  
-  // Pending/In progress statuses - yellow
-  if (statusLower.includes('pending') || 
-      statusLower.includes('processing') || 
-      statusLower.includes('in progress') ||
-      statusLower.includes('hold')) {
-    return 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20'
-  }
-  
-  // Transfer related - purple
-  if (statusLower.includes('transfer') || 
-      statusLower.includes('change')) {
-    return 'bg-purple-500/10 text-purple-400 border-purple-500/20'
-  }
-  
-  // Deletion/Expiry related - orange
-  if (statusLower.includes('delete') || 
-      statusLower.includes('expir') || 
-      statusLower.includes('expired')) {
-    return 'bg-orange-500/10 text-orange-400 border-orange-500/20'
-  }
-  
-  // Auto renew - cyan
-  if (statusLower.includes('auto renew')) {
-    return 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20'
-  }
-  
-  // Default - blue
-  return 'bg-blue-500/10 text-blue-400 border-blue-500/20'
 }
 
 async function fetchRdapJson(url, signal) {
@@ -199,7 +155,7 @@ async function fetchRdapIP(ip, signal) {
 // Main lookup function that auto-detects query type
 async function fetchRdap(input, signal) {
   const queryType = detectQueryType(input)
-  
+
   if (queryType === 'domain') {
     return { data: await fetchRdapDomain(input, signal), type: 'domain' }
   } else if (queryType === 'ip') {
@@ -209,295 +165,276 @@ async function fetchRdap(input, signal) {
   }
 }
 
-// UI component helpers
-function SectionCard({ icon: Icon, title, defaultOpen = true, children }) {
-  const [open, setOpen] = useState(defaultOpen)
+// Terminal-style renderer — both domain and IP lookups render as a full,
+// plain-text dump of the RDAP response 
+function RdapTextDisplay({ title, text }) {
   return (
-    <div className="bg-backgroundCard border border-borderColor rounded-2xl overflow-hidden">
-      <button
-        onClick={() => setOpen(o => !o)}
-        className="w-full flex items-center justify-between gap-3 px-5 py-4 bg-transparent border-none cursor-pointer hover:bg-backgroundColor transition-colors text-left"
-      >
-        <div className="flex items-center gap-2.5">
-          <Icon size={16} className="text-accent shrink-0" />
-          <h2 className="text-sm font-semibold text-textHeader m-0">{title}</h2>
-        </div>
-        {open ? <ChevronUp size={14} className="text-text" /> : <ChevronDown size={14} className="text-text" />}
-      </button>
-      {open && <div className="border-t border-borderColor px-5 py-4">{children}</div>}
-    </div>
-  )
-}
-
-function InfoRow({ label, value, mono = false, copyable = false, onCopy, copiedKey, fieldKey }) {
-  if (value === undefined || value === null || value === '') return null
-  return (
-    <div className="flex items-center justify-between gap-3 py-2 border-b border-borderColor last:border-b-0">
-      <span className="text-xs text-text shrink-0">{label}</span>
-      <div className="flex items-center gap-1.5 min-w-0">
-        <span className={`text-textHeader truncate text-right text-sm ${mono ? 'font-mono' : 'font-medium'}`}>
-          {value}
-        </span>
-        {copyable && (
+    <div className="bg-black border border-borderColor rounded-2xl overflow-hidden font-mono">
+      <div className="p-5 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+        <div className="flex justify-between items-start mb-3 min-w-max">
+          <span className="text-xs text-white/60">{title}</span>
           <button
-            onClick={() => onCopy(String(value), fieldKey)}
-            className="text-text hover:text-accent transition-colors bg-transparent border-none cursor-pointer p-0.5 shrink-0"
-            title="Copy"
-          >
-            {copiedKey === fieldKey ? <Check size={12} className="text-green-400" /> : <Copy size={12} />}
-          </button>
-        )}
-      </div>
-    </div>
-  )
-}
-
-// RDAP plain text display for IP lookups
-function RdapTextDisplay({ data, queryInput }) {
-  const ipNetwork = data?.ipNetwork || data
-  
-  // Extract entities
-  const registrant = data ? findEntity(data.entities, 'registrant') : null
-  const registrantVcard = registrant ? parseVcard(registrant.vcardArray) : {}
-  const registrantFields = {
-    fn: realValue(registrantVcard.fn),
-    org: realValue(registrantVcard.org),
-    email: realValue(registrantVcard.email),
-    tel: realValue(registrantVcard.tel),
-    adr: realValue(registrantVcard.adr),
-    country: realValue(registrantVcard.country),
-  }
-  
-  // Find technical and abuse contacts
-  const techEntity = data ? findEntity(data.entities, 'technical') : null
-  const techVcard = techEntity ? parseVcard(techEntity.vcardArray) : {}
-  
-  const abuseEntity = data ? findEntity(data.entities, 'abuse') : null
-  const abuseVcard = abuseEntity ? parseVcard(abuseEntity.vcardArray) : {}
-  
-  // Get dates
-  const registeredDate = data ? formatDate(findEventDate(data.events, 'registration')) : null
-  const updatedDate = data ? formatDate(findEventDate(data.events, 'last changed')) : null
-
-  // Build the RDAP plain text output as an array of lines
-  const lines = []
-  
-  // RDAP header
-  lines.push('RDAP IP Network Information')
-  lines.push('='.repeat(40))
-  lines.push('')
-  
-  // Network Information
-  if (ipNetwork.startAddress && ipNetwork.endAddress) {
-    lines.push(`Network Range:    ${ipNetwork.startAddress} - ${ipNetwork.endAddress}`)
-  }
-  if (ipNetwork.cidr) {
-    lines.push(`CIDR:             ${ipNetwork.cidr}`)
-  }
-  if (ipNetwork.name) {
-    lines.push(`Network Name:     ${ipNetwork.name}`)
-  }
-  if (ipNetwork.handle) {
-    lines.push(`Handle:           ${ipNetwork.handle}`)
-  }
-  if (ipNetwork.parentHandle) {
-    lines.push(`Parent Handle:    ${ipNetwork.parentHandle}`)
-  }
-  if (ipNetwork.type) {
-    lines.push(`Network Type:     ${ipNetwork.type}`)
-  }
-  if (data?.country) {
-    lines.push(`Country:          ${data.country}`)
-  }
-  if (registrantFields.org) {
-    lines.push(`Organization:     ${registrantFields.org}`)
-  }
-  if (registeredDate) {
-    lines.push(`Registration Date: ${registeredDate}`)
-  }
-  if (updatedDate) {
-    lines.push(`Last Updated:     ${updatedDate}`)
-  }
-  if (data?.status && data.status.length > 0) {
-    lines.push(`Status:           ${data.status.join(', ')}`)
-  }
-  if (data?.remarks && data.remarks.length > 0 && data.remarks[0].description) {
-    const comment = data.remarks[0].description.join(' ')
-    lines.push(`Comment:          ${comment}`)
-  }
-  if (data?.links && data.links.find(l => l.rel === 'self')?.href) {
-    lines.push(`Reference:        ${data.links.find(l => l.rel === 'self')?.href}`)
-  }
-  
-  lines.push('')
-  lines.push('Organization Details')
-  lines.push('-'.repeat(40))
-  lines.push('')
-  
-  // Organization details
-  if (registrantFields.org || registrant) {
-    if (registrantFields.org) {
-      lines.push(`Organization Name: ${registrantFields.org}`)
-    }
-    if (registrant?.handle) {
-      lines.push(`Organization ID:   ${registrant.handle}`)
-    }
-    if (registrantFields.adr) {
-      lines.push(`Address:           ${registrantFields.adr}`)
-    }
-    if (registrantVcard.locality) {
-      lines.push(`City:              ${registrantVcard.locality}`)
-    }
-    if (registrantVcard.region) {
-      lines.push(`State/Province:    ${registrantVcard.region}`)
-    }
-    if (registrantVcard.postalCode) {
-      lines.push(`Postal Code:       ${registrantVcard.postalCode}`)
-    }
-    if (registrantFields.country) {
-      lines.push(`Country:           ${registrantFields.country}`)
-    }
-    if (registrantFields.email) {
-      lines.push(`Email:             ${registrantFields.email}`)
-    }
-    if (registrantFields.tel) {
-      lines.push(`Phone:             ${registrantFields.tel}`)
-    }
-    if (registeredDate) {
-      lines.push(`Registration Date: ${registeredDate}`)
-    }
-    if (updatedDate) {
-      lines.push(`Last Updated:      ${updatedDate}`)
-    }
-    if (registrant?.links && registrant.links.find(l => l.rel === 'self')?.href) {
-      lines.push(`Reference:         ${registrant.links.find(l => l.rel === 'self')?.href}`)
-    }
-  } else {
-    lines.push('No organization details available')
-  }
-  
-  lines.push('')
-  lines.push('Contacts')
-  lines.push('-'.repeat(40))
-  lines.push('')
-  
-  // Abuse Contact
-  if (abuseEntity) {
-    lines.push('Abuse Contact:')
-    if (abuseEntity.handle) {
-      lines.push(`  Handle:          ${abuseEntity.handle}`)
-    }
-    if (abuseVcard.fn) {
-      lines.push(`  Name:            ${abuseVcard.fn}`)
-    }
-    if (abuseVcard.tel) {
-      lines.push(`  Phone:           ${abuseVcard.tel}`)
-    }
-    if (abuseVcard.email) {
-      lines.push(`  Email:           ${abuseVcard.email}`)
-    }
-    if (abuseEntity.links && abuseEntity.links.find(l => l.rel === 'self')?.href) {
-      lines.push(`  Reference:       ${abuseEntity.links.find(l => l.rel === 'self')?.href}`)
-    }
-    lines.push('')
-  }
-  
-  // Technical Contact
-  if (techEntity) {
-    lines.push('Technical Contact:')
-    if (techEntity.handle) {
-      lines.push(`  Handle:          ${techEntity.handle}`)
-    }
-    if (techVcard.fn) {
-      lines.push(`  Name:            ${techVcard.fn}`)
-    }
-    if (techVcard.tel) {
-      lines.push(`  Phone:           ${techVcard.tel}`)
-    }
-    if (techVcard.email) {
-      lines.push(`  Email:           ${techVcard.email}`)
-    }
-    if (techEntity.links && techEntity.links.find(l => l.rel === 'self')?.href) {
-      lines.push(`  Reference:       ${techEntity.links.find(l => l.rel === 'self')?.href}`)
-    }
-    lines.push('')
-  }
-  
-  // Administrative Contact (if available)
-  const adminEntity = data ? findEntity(data.entities, 'administrative') : null
-  const adminVcard = adminEntity ? parseVcard(adminEntity.vcardArray) : {}
-  if (adminEntity) {
-    lines.push('Administrative Contact:')
-    if (adminEntity.handle) {
-      lines.push(`  Handle:          ${adminEntity.handle}`)
-    }
-    if (adminVcard.fn) {
-      lines.push(`  Name:            ${adminVcard.fn}`)
-    }
-    if (adminVcard.tel) {
-      lines.push(`  Phone:           ${adminVcard.tel}`)
-    }
-    if (adminVcard.email) {
-      lines.push(`  Email:           ${adminVcard.email}`)
-    }
-    if (adminEntity.links && adminEntity.links.find(l => l.rel === 'self')?.href) {
-      lines.push(`  Reference:       ${adminEntity.links.find(l => l.rel === 'self')?.href}`)
-    }
-    lines.push('')
-  }
-  
-  // Events
-  if (data?.events && data.events.length > 0) {
-    lines.push('Events')
-    lines.push('-'.repeat(40))
-    data.events.forEach(event => {
-      const date = formatDate(event.eventDate)
-      if (date) {
-        lines.push(`${event.eventAction}: ${date}`)
-      }
-    })
-    lines.push('')
-  }
-  
-  // Nameservers (if any)
-  if (data?.nameservers && data.nameservers.length > 0) {
-    lines.push('Nameservers')
-    lines.push('-'.repeat(40))
-    data.nameservers.forEach(ns => {
-      if (ns.ldhName) {
-        lines.push(`  ${ns.ldhName}`)
-      }
-    })
-    lines.push('')
-  }
-  
-  // RDAP footer
-  lines.push('='.repeat(40))
-  lines.push(`RDAP query for: ${queryInput}`)
-  lines.push(`Data source: rdap.org`)
-
-  // Join all lines with newlines
-  const whoisText = lines.join('\n')
-
-  return (
-    <div className="bg-backgroundCard border border-borderColor rounded-2xl overflow-hidden font-mono">
-      <div className="p-5 overflow-x-auto">
-        <div className="flex justify-between items-start mb-3">
-          <span className="text-xs text-text">RDAP Plain Text Format</span>
-          <button
-            onClick={() => navigator.clipboard.writeText(whoisText)}
-            className="text-text hover:text-accent transition-colors bg-transparent border-none cursor-pointer p-1 text-xs flex items-center gap-1"
+            onClick={() => navigator.clipboard.writeText(text)}
+            className="text-white/60 hover:text-white transition-colors bg-transparent border-none cursor-pointer p-1 text-xs flex items-center gap-1"
           >
             <Copy size={12} />
             Copy All
           </button>
         </div>
-        <pre className="text-xs text-text whitespace-pre-wrap break-all">
-          {whoisText}
+        <pre className="text-xs text-white whitespace-pre font-mono">
+          {text}
         </pre>
       </div>
     </div>
   )
+}
+
+// Builds one KV-style contact block (registrar / registrant / admin / tech /
+// billing / reseller...) from an RDAP entity. If the entity is entirely
+// absent, or every personal field on it is missing, the whole block is
+// printed as REDACTED FOR PRIVACY — which is what's actually happening on
+// most gTLD domains post-GDPR.
+function pushContactBlock(push, kv, heading, entity) {
+  push('')
+  push(heading)
+  push('-'.repeat(50))
+
+  if (!entity) {
+    push(REDACTED_LABEL)
+    return
+  }
+
+  const vcard = parseVcard(entity.vcardArray)
+  const fieldPairs = [
+    ['Name', vcard.fn],
+    ['Organization', vcard.org],
+    ['Email', vcard.email],
+    ['Phone', vcard.tel],
+    ['Address', vcard.adr],
+    ['Country', vcard.country],
+  ]
+
+  let printedAny = false
+
+  // if (entity.handle) { 
+  //   kv('Handle', entity.handle); 
+  //   printedAny = true 
+  // }
+
+  fieldPairs.forEach(([label, raw]) => {
+    const text = fieldOrRedacted(raw)
+    if (text === null) return // field wasn't provided at all — omit rather than guess
+    printedAny = true
+    kv(label, text)
+  })
+
+  const ianaId = entity.publicIds?.find(p => p.type === 'IANA Registrar ID')?.identifier
+  if (ianaId) { kv('IANA ID', ianaId); printedAny = true }
+
+  const selfLink = entity.links?.find(l => l.rel === 'self')?.href
+  if (selfLink) { kv('Reference', selfLink); printedAny = true }
+
+  // if (entity.roles?.length) { 
+  //   kv('Roles', entity.roles.join(', ')); 
+  //   printedAny = true 
+  // }
+
+  // Nested sub-entities, e.g. a registrar's abuse contact
+  ;(entity.entities || []).forEach(sub => {
+    const subVcard = parseVcard(sub.vcardArray)
+    const subRole = sub.roles?.[0] ? capitalizeWords(sub.roles[0]) : 'Contact'
+    const email = fieldOrRedacted(subVcard.email)
+    const tel = fieldOrRedacted(subVcard.tel)
+    if (email !== null) { kv(`${subRole} Email`, email); printedAny = true }
+    if (tel !== null) { kv(`${subRole} Phone`, tel); printedAny = true }
+  })
+
+  if (!printedAny) push(REDACTED_LABEL)
+}
+
+// Renders the ENTIRE RDAP domain response as plain text — every field the
+// API returned, not a curated subset. Anything the registry marks redacted
+// (or a whole contact the response omits for privacy) prints as
+// "REDACTED FOR PRIVACY" instead of silently disappearing.
+function buildDomainRdapText(data, queryInput) {
+  const lines = []
+  const push = (s = '') => lines.push(s)
+  const kv = (label, value, width = 20) => {
+    if (value === undefined || value === null || value === '') return
+    push(`${(label + ':').padEnd(width)} ${value}`)
+  }
+
+  push('RDAP DOMAIN LOOKUP')
+  push('='.repeat(50))
+  push('')
+
+  kv('Domain Name', data.ldhName ?? queryInput)
+  if (data.unicodeName && data.unicodeName !== data.ldhName) kv('Unicode Name', data.unicodeName)
+  kv('Registry Domain ID', data.handle)
+  if (data.status?.length) kv('Status', data.status.map(s => capitalizeWords(s.replace(/_/g, ' '))).join(', '))
+  // if (data.port43) kv('WHOIS Server', data.port43)
+  // if (data.rdapConformance?.length) kv('RDAP Conformance', data.rdapConformance.join(', '))
+
+  const regDate = formatDate(findEventDate(data.events, 'registration'))
+  const expDate = formatDate(findEventDate(data.events, 'expiration'))
+  const updDate = formatDate(findEventDate(data.events, 'last changed'))
+  const transferDate = formatDate(findEventDate(data.events, 'transfer'))
+  kv('Registered On', regDate)
+  kv('Expires On', expDate)
+  kv('Last Updated', updDate)
+  kv('Last Transferred', transferDate)
+
+  const knownActions = new Set(['registration', 'expiration', 'last changed', 'transfer'])
+  ;(data.events || [])
+    .filter(e => !knownActions.has(e.eventAction))
+    .forEach(e => kv(capitalizeWords(e.eventAction.replace(/_/g, ' ')), formatDate(e.eventDate)))
+
+  // DNSSEC
+  if (data.secureDNS) {
+    push('')
+    push('DNSSEC')
+    push('-'.repeat(50))
+    kv('Zone Signed', data.secureDNS.zoneSigned ? 'Yes' : 'No')
+    kv('Delegation Signed', data.secureDNS.delegationSigned ? 'Yes' : 'No')
+  }
+
+  // Nameservers
+  if (data.nameservers?.length) {
+    push('')
+    push('Nameservers')
+    push('-'.repeat(50))
+    data.nameservers.forEach(ns => {
+      const ips = [...(ns.ipAddresses?.v4 || []), ...(ns.ipAddresses?.v6 || [])]
+      push(`  ${ns.ldhName}${ips.length ? '  (' + ips.join(', ') + ')' : ''}`)
+    })
+  }
+
+  // Primary contact roles, always shown even when redacted/absent
+  const roleOrder = ['registrar', 'reseller', 'registrant', 'administrative', 'technical', 'billing']
+  const seenRoles = new Set(roleOrder)
+  roleOrder.forEach(role => {
+    pushContactBlock(push, kv, `${capitalizeWords(role)} Contact`, findEntity(data.entities, role))
+  })
+
+  // Any entity carrying a role we didn't already cover
+  ;(data.entities || []).forEach(e => {
+    const uncovered = (e.roles || []).filter(r => !seenRoles.has(r))
+    if (uncovered.length === 0) return
+    pushContactBlock(push, kv, `${capitalizeWords(uncovered.join(', '))} Contact`, e)
+  })
+
+
+  // Notices & remarks
+  const notices = [...(data.notices || []), ...(data.remarks || [])]
+  if (notices.length) {
+    push('')
+    push('Notices')
+    push('-'.repeat(50))
+    notices.forEach(n => {
+      if (n.title) push(`${n.title}:`)
+      ;(n.description || []).forEach(d => push(`  ${d}`))
+    })
+  }
+
+  // Links
+  if (data.links?.length) {
+    push('')
+    push('Links')
+    push('-'.repeat(50))
+    data.links.forEach(l => push(`  ${l.rel || 'link'}: ${l.href}`))
+  }
+
+  push('')
+  push('='.repeat(50))
+  push(`RDAP query for: ${queryInput}`)
+  push('Data source: rdap.org')
+
+  return lines.join('\n')
+}
+
+// Renders the ENTIRE RDAP IP-network response as plain text, same rules as the domain renderer above.
+function buildIpRdapText(data, queryInput) {
+  const ipNetwork = data?.ipNetwork || data
+  const lines = []
+  const push = (s = '') => lines.push(s)
+  const kv = (label, value, width = 20) => {
+    if (value === undefined || value === null || value === '') return
+    push(`${(label + ':').padEnd(width)} ${value}`)
+  }
+
+  push('RDAP IP NETWORK LOOKUP')
+  push('='.repeat(50))
+  push('')
+
+  if (ipNetwork.startAddress && ipNetwork.endAddress) {
+    kv('Network Range', `${ipNetwork.startAddress} - ${ipNetwork.endAddress}`)
+  }
+  kv('CIDR', ipNetwork.cidr)
+  kv('Network Name', ipNetwork.name)
+  kv('Network Type', ipNetwork.type)
+  kv('Country', data.country)
+  if (data.status?.length) kv('Status', data.status.map(s => capitalizeWords(s.replace(/_/g, ' '))).join(', '))
+  if (data.port43) kv('WHOIS Server', data.port43)
+  if (data.rdapConformance?.length) kv('RDAP Conformance', data.rdapConformance.join(', '))
+
+  const regDate = formatDate(findEventDate(data.events, 'registration'))
+  const updDate = formatDate(findEventDate(data.events, 'last changed'))
+  kv('Registration Date', regDate)
+  kv('Last Updated', updDate)
+
+  const knownActions = new Set(['registration', 'last changed'])
+  ;(data.events || [])
+    .filter(e => !knownActions.has(e.eventAction))
+    .forEach(e => kv(capitalizeWords(e.eventAction.replace(/_/g, ' ')), formatDate(e.eventDate)))
+
+  const selfLink = data.links?.find(l => l.rel === 'self')?.href
+  if (selfLink) kv('Reference', selfLink)
+
+  // Contact roles found on IP networks
+  const roleOrder = ['registrant', 'administrative', 'technical', 'abuse']
+  const seenRoles = new Set(roleOrder)
+  roleOrder.forEach(role => {
+    pushContactBlock(push, kv, `${capitalizeWords(role)} Contact`, findEntity(data.entities, role))
+  })
+
+  ;(data.entities || []).forEach(e => {
+    const uncovered = (e.roles || []).filter(r => !seenRoles.has(r))
+    if (uncovered.length === 0) return
+    pushContactBlock(push, kv, `${capitalizeWords(uncovered.join(', '))} Contact`, e)
+  })
+
+  // Nameservers (occasionally present on IP network objects)
+  if (data.nameservers?.length) {
+    push('')
+    push('Nameservers')
+    push('-'.repeat(50))
+    data.nameservers.forEach(ns => ns.ldhName && push(`  ${ns.ldhName}`))
+  }
+
+  const notices = [...(data.notices || []), ...(data.remarks || [])]
+  if (notices.length) {
+    push('')
+    push('Notices')
+    push('-'.repeat(50))
+    notices.forEach(n => {
+      if (n.title) push(`${n.title}:`)
+      ;(n.description || []).forEach(d => push(`  ${d}`))
+    })
+  }
+
+  if (data.links?.length) {
+    push('')
+    push('Links')
+    push('-'.repeat(50))
+    data.links.forEach(l => push(`  ${l.rel || 'link'}: ${l.href}`))
+  }
+
+  push('')
+  push('='.repeat(50))
+  push(`RDAP query for: ${queryInput}`)
+  push('Data source: rdap.org')
+
+  return lines.join('\n')
 }
 
 export default function WhoisLookup() {
@@ -507,7 +444,6 @@ export default function WhoisLookup() {
   const [queryType, setQueryType] = useState(null) // 'domain' or 'ip'
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
-  const [copiedKey, setCopiedKey] = useState(null)
   const abortRef = useRef(null)
 
   const runLookup = useCallback(async () => {
@@ -550,44 +486,11 @@ export default function WhoisLookup() {
     if (e.key === 'Enter') runLookup()
   }
 
-  const copy = useCallback((text, key) => {
-    navigator.clipboard.writeText(text)
-    setCopiedKey(key)
-    setTimeout(() => setCopiedKey(null), 1500)
-  }, [])
-
-  // Get data for structured view
-  const registrar = rdapData ? findEntity(rdapData.entities, 'registrar') : null
-  const registrarVcard = registrar ? parseVcard(registrar.vcardArray) : {}
-  const registrarIanaId = registrar?.publicIds?.find(p => p.type === 'IANA Registrar ID')?.identifier
-  const abuseEntity = registrar ? findEntity(registrar.entities, 'abuse') : null
-  const abuseVcard = abuseEntity ? parseVcard(abuseEntity.vcardArray) : {}
-
-  const registrant = rdapData ? findEntity(rdapData.entities, 'registrant') : null
-  const registrantVcard = registrant ? parseVcard(registrant.vcardArray) : {}
-  const registrantFields = {
-    fn: registrantVcard.fn,
-    org: registrantVcard.org,
-    email: realValue(registrantVcard.email),
-    tel: realValue(registrantVcard.tel),
-    adr: realValue(registrantVcard.adr),
-    country: realValue(registrantVcard.country),
-  }
-  const hasVisibleRegistrantData = Object.values(registrantFields).some(Boolean)
-
-  const registeredDate = rdapData ? formatDate(findEventDate(rdapData.events, 'registration')) : null
-  const expiresDate = rdapData ? formatDate(findEventDate(rdapData.events, 'expiration')) : null
-  const updatedDate = rdapData ? formatDate(findEventDate(rdapData.events, 'last changed')) : null
-  const dnssecSigned = rdapData?.secureDNS?.delegationSigned
-
   const isIPQuery = queryType === 'ip'
-  const ipNetwork = rdapData?.ipNetwork || rdapData
 
-  // Format status with capitalization
-  const formatStatus = (status) => {
-    if (!status) return status
-    return capitalizeWords(status.replace(/_/g, ' '))
-  }
+  const outputText = rdapData
+    ? (isIPQuery ? buildIpRdapText(rdapData, queryInput) : buildDomainRdapText(rdapData, queryInput))
+    : ''
 
   return (
     <div className="mx-auto px-5 md:px-10 py-8 font-poppins">
@@ -637,8 +540,8 @@ export default function WhoisLookup() {
         <div className="mb-4 flex items-center gap-2 text-xs">
           <span className="text-text">Query type:</span>
           <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full font-medium ${
-            isIPQuery 
-              ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20' 
+            isIPQuery
+              ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20'
               : 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
           }`}>
             {isIPQuery ? <MapPin size={12} /> : <Globe size={12} />}
@@ -666,91 +569,15 @@ export default function WhoisLookup() {
         </div>
       )}
 
-      {/* Results */}
+      {/* Results — rendered as a full plain-text dump of the RDAP response */}
       {rdapData && !loading && (
-        <div className="flex flex-col gap-4">
-          {isIPQuery ? (
-            // RDAP plain text display for IP lookups
-            <RdapTextDisplay data={rdapData} queryInput={queryInput} />
-          ) : (
-            // Structured format for domain lookups
-            <>
-              {/* Domain Information */}
-              <SectionCard icon={ScrollText} title="Domain Information">
-                <InfoRow label="Domain Name" value={rdapData.ldhName ?? queryInput} mono copyable onCopy={copy} copiedKey={copiedKey} fieldKey="domain-name" />
-                <InfoRow label="Registry Domain ID" value={rdapData.handle} mono copyable onCopy={copy} copiedKey={copiedKey} fieldKey="domain-handle" />
-                
-                {/* Status with colorful badges */}
-                {rdapData.status && rdapData.status.length > 0 && (
-                  <div className="flex items-start gap-3 py-2 border-b border-borderColor last:border-b-0">
-                    <span className="text-xs text-text shrink-0 pt-0.5">Status</span>
-                    <div className="flex-1 flex flex-wrap gap-1.5 justify-end">
-                      {rdapData.status.map((status, index) => {
-                        const formattedStatus = formatStatus(status)
-                        const colorClass = getStatusColor(status)
-                        return (
-                          <span
-                            key={index}
-                            className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${colorClass}`}
-                          >
-                            {formattedStatus}
-                          </span>
-                        )
-                      })}
-                    </div>
-                  </div>
-                )}
-                
-                <InfoRow label="Registered On" value={registeredDate} />
-                <InfoRow label="Expires On" value={expiresDate} />
-                <InfoRow label="Last Updated" value={updatedDate} />
-                <InfoRow
-                  label="DNSSEC"
-                  value={rdapData.secureDNS ? (dnssecSigned ? 'Signed' : 'Unsigned') : undefined}
-                />
-              </SectionCard>
-
-              {/* Registrar Information */}
-              <SectionCard icon={Building2} title="Registrar Information">
-                {registrar ? (
-                  <>
-                    <InfoRow label="Registrar" value={registrarVcard.fn} copyable onCopy={copy} copiedKey={copiedKey} fieldKey="registrar-name" />
-                    <InfoRow label="IANA ID" value={registrarIanaId} mono />
-                    <InfoRow label="Registrar URL" value={registrarVcard.url} mono copyable onCopy={copy} copiedKey={copiedKey} fieldKey="registrar-url" />
-                    <InfoRow label="Abuse Contact Email" value={abuseVcard.email} mono copyable onCopy={copy} copiedKey={copiedKey} fieldKey="abuse-email" />
-                    <InfoRow label="Abuse Contact Phone" value={abuseVcard.tel} mono />
-                  </>
-                ) : (
-                  <p className="text-xs text-text m-0">No registrar information was returned for this domain.</p>
-                )}
-              </SectionCard>
-
-              {/* Registrant Contact */}
-              <SectionCard icon={UserRound} title="Registrant Contact">
-                {hasVisibleRegistrantData ? (
-                  <>
-                    <InfoRow label="Name" value={registrantFields.fn} />
-                    <InfoRow label="Organization" value={registrantFields.org} />
-                    <InfoRow label="Email" value={registrantFields.email} mono copyable onCopy={copy} copiedKey={copiedKey} fieldKey="registrant-email" />
-                    <InfoRow label="Phone" value={registrantFields.tel} mono />
-                    <InfoRow label="Address" value={registrantFields.adr} />
-                    <InfoRow label="Country" value={registrantFields.country} />
-                  </>
-                ) : (
-                  <p className="text-xs text-text m-0">
-                    No public registrant details for this domain — either redacted for privacy or not returned.
-                  </p>
-                )}
-              </SectionCard>
-            </>
-          )}
-        </div>
+        <RdapTextDisplay title="RDAP Plain Text Format" text={outputText} />
       )}
 
       {/* Empty state */}
       {!rdapData && !loading && !error && (
         <div className="flex flex-col items-center justify-center py-16 text-center">
-          <Globe size={32} className="text-accent mx-auto mb-2.5 sm:mb-3 sm:size-10" />
+          <TerminalSquare size={32} className="text-accent mx-auto mb-2.5 sm:mb-3 sm:size-10" />
           <p className="text-sm text-textHeader font-medium m-0 mb-1">Enter a domain or IP to get started</p>
           <p className="text-xs text-text m-0 max-w-xs">
             Try <code className="font-mono text-accent">cloudflare.com</code> or{' '}
