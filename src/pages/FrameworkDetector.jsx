@@ -347,7 +347,7 @@ export default function FrameworkDetector() {
           disabled={loading}
           className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium bg-accent text-white border-none cursor-pointer hover:opacity-90 transition-opacity disabled:opacity-50 shrink-0"
         >
-          {loading ? <Loader2 size={14} className="animate-spin" /> : <Cpu size={14} />}
+          {loading ? <Loader2 size={14} className="animate-spin" /> : <Search size={14} />}
           <span className="hidden sm:inline">Detect Stack</span>
         </button>
       </div>
@@ -418,7 +418,7 @@ export default function FrameworkDetector() {
           <Cpu size={36} className="text-accent mx-auto mb-3" />
           <p className="text-sm text-textHeader font-medium m-0 mb-1">Enter a domain to detect its stack</p>
           <p className="text-xs text-text m-0 max-w-xs leading-relaxed">
-            Detects hosting platforms, JS frameworks, CDNs, ecommerce platforms, and website
+            Detects hosting platforms, frontend frameworks, CDNs, ecommerce platforms, and website
             builders. Try{' '}
             <code className="font-mono text-accent">vercel.com</code> or{' '}
             <code className="font-mono text-accent">nextjs.org</code>.
