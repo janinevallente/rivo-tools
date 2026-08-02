@@ -2,13 +2,22 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.ico" />
+
+    <!-- Standard Favicons -->
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/favicon-192x192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="/favicon-512x512.png">
+
+    <!-- Apple Touch Icon (iOS Home Screen) -->
+    <link rel="apple-touch-icon" sizes="180x180" href="/favicon-180x180.png">
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Byteflow</title>
+    <title>Rivo</title>
     <script>
       (function () {
         try {
-          var stored = window.localStorage.getItem('byteflow-theme');
+          var stored = window.localStorage.getItem('rivo-theme');
           var isDark = stored ? stored === 'dark' : !window.matchMedia('(prefers-color-scheme: light)').matches;
           if (isDark) document.documentElement.classList.add('dark');
         } catch (e) {}
