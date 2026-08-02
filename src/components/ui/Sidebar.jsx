@@ -142,7 +142,7 @@ export default function Sidebar({ activeTool, onSelectTool }) {
   return (
     <>
       {/* Mobile navbar */}
-      <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-backgroundCard border-b border-borderColor">
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-backgroundCard border-b border-borderColor">
         <div className="flex items-center justify-between px-4 h-14">
           <button
             onClick={() => handleSelect(null)}
@@ -214,7 +214,7 @@ export default function Sidebar({ activeTool, onSelectTool }) {
 
       {/* Desktop sidebar */}
       <aside
-        className={`hidden md:flex flex-col shrink-0 bg-backgroundCard border-r border-borderColor h-screen sticky top-0 overflow-hidden transition-all duration-200 ${collapsed ? 'w-16' : 'w-[225px]'}`}
+        className={`hidden lg:flex flex-col shrink-0 bg-backgroundCard border-r border-borderColor h-screen sticky top-0 overflow-hidden transition-all duration-200 ${collapsed ? 'w-16' : 'w-[225px]'}`}
       >
         {/* Logo — click to toggle collapse */}
         <button

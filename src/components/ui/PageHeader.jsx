@@ -43,7 +43,7 @@ export default function PageHeader({ icon: Icon, title, description, badge = nul
 
       {/* Search Container */}
       <div ref={dropdownRef} className="w-full mb-3 lg:mb-0 lg:w-72 relative z-[1050]">
-        <div className="relative flex items-center">
+        <div className="relative hidden lg:flex items-center">
           <Search 
             size={18} 
             className="absolute left-3.5 text-accent pointer-events-none" 
