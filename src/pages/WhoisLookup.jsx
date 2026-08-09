@@ -8,6 +8,8 @@ import {
   CircleX,
   MapPin,
   TerminalSquare,
+  Info,
+  ExternalLink,
 } from 'lucide-react'
 import { SyncLoader } from 'react-spinners'
 import PageHeader from '../components/ui/PageHeader'
@@ -18,6 +20,43 @@ const RDAP_DOMAIN_BOOTSTRAP = 'https://rdap.org/domain/' //for domain query
 const RDAP_IP_BOOTSTRAP = 'https://rdap.org/ip/' //for ip query
 
 const REDACTED_LABEL = 'REDACTED FOR PRIVACY'
+
+// ccTLDs known to have no RDAP support — RDAP calls to these will fail,
+// so we short-circuit and point the user to the registry's own WHOIS lookup
+// instead of burning a request and showing a generic error.
+const NO_RDAP_TLDS = new Set([
+  'cn', 'de', 'ru', 'eu', 'jp', 'kr', 'tw', 'hk', 'my', 'th', 'vn', 'ph', 'id',
+])
+
+// Where to send the user to look a domain up manually, keyed by TLD.
+// Only TLDs we have a confirmed, working WHOIS link for are listed here —
+// if a NO_RDAP_TLDS entry isn't in this map, we just say so without
+// guessing at a link.
+const TLD_WHOIS_LINKS = {
+  au: 'https://whois.auda.org.au/',
+  sg: 'https://sgnic.sg/',
+  ai: 'http://whois.nic.ai/',
+  ch: 'https://www.nic.ch/whois/',
+  cn: 'https://webwhois.cnnic.cn/WelcomeServlet',
+  dk: 'https://whois.domaintools.com/',
+  es: 'https://www.dominios.es/en',
+  eu: 'https://www.eurodns.com/whois-search/es-domain-name',
+  fr: 'https://www.afnic.fr/en/domain-names-and-support/everything-there-is-to-know-about-domain-names/find-a-domain-name-or-a-holder-using-whois/',
+  in: 'https://whois.nixiregistry.in/',
+  it: 'https://web-whois.nic.it/result',
+  li: 'https://www.nic.li/',
+  nz: 'https://dnc.org.nz/whois/whois-lookup/',
+  no: 'https://www.norid.no/en/domeneoppslag/hvem-har-domenenavnet/',
+  uk: 'https://nominet.uk/lookup/',
+  za: 'https://zarc.web.za/whois/',
+  my: 'https://mynic.my/whois/',
+  ph: 'https://whois.dot.ph/',
+}
+
+function getTld(domain) {
+  const parts = domain.split('.')
+  return parts[parts.length - 1]
+}
 
 // Validation functions
 function isValidHostname(h) {
@@ -167,20 +206,10 @@ async function fetchRdap(input, signal) {
 
 // Terminal-style renderer — both domain and IP lookups render as a full,
 // plain-text dump of the RDAP response 
-function RdapTextDisplay({ title, text }) {
+function RdapTextDisplay({ text }) {
   return (
     <div className="bg-black border border-borderColor rounded-2xl overflow-hidden font-mono">
       <div className="p-5 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-        <div className="flex justify-between items-start mb-3 min-w-max">
-          <span className="text-xs text-white/60">{title}</span>
-          <button
-            onClick={() => navigator.clipboard.writeText(text)}
-            className="text-white/60 hover:text-white transition-colors bg-transparent border-none cursor-pointer p-1 text-xs flex items-center gap-1"
-          >
-            <Copy size={12} />
-            Copy All
-          </button>
-        </div>
         <pre className="text-xs text-white whitespace-pre font-mono">
           {text}
         </pre>
@@ -264,10 +293,6 @@ function buildDomainRdapText(data, queryInput) {
     push(`${(label + ':').padEnd(width)} ${value}`)
   }
 
-  push('RDAP DOMAIN LOOKUP')
-  push('='.repeat(50))
-  push('')
-
   kv('Domain Name', data.ldhName ?? queryInput)
   if (data.unicodeName && data.unicodeName !== data.ldhName) kv('Unicode Name', data.unicodeName)
   kv('Registry Domain ID', data.handle)
@@ -289,13 +314,26 @@ function buildDomainRdapText(data, queryInput) {
     .filter(e => !knownActions.has(e.eventAction))
     .forEach(e => kv(capitalizeWords(e.eventAction.replace(/_/g, ' ')), formatDate(e.eventDate)))
 
+  // "Last Update of RDAP Database" normally arrives as a notice rather than
+  // an event — pull it up next to the other date fields instead of leaving
+  // it buried in the Notices section below.
+  const allNotices = [...(data.notices || []), ...(data.remarks || [])]
+  const lastUpdateNotice = allNotices.find(n => /last update of rdap database/i.test(n.title || ''))
+  const lastUpdateRaw = lastUpdateNotice?.description?.[0]
+  const lastUpdateDate = lastUpdateRaw
+    ? ((d => (Number.isNaN(new Date(d).getTime()) ? d : formatDate(d)))(lastUpdateRaw))
+    : null
+  kv('Last Update Of RDAP Database', lastUpdateDate)
+
+  // SGNIC returns a custom "sgNIC_verifiedID_Status" field on .sg domains
+  // (e.g. "VerifiedID@SG-OK", "VerifiedID@SG-Pending"). Only shown when the
+  // RDAP response actually includes it.
+  kv('Verified ID Status', data.sgNIC_verifiedID_Status)
+
   // DNSSEC
   if (data.secureDNS) {
-    push('')
-    push('DNSSEC')
-    push('-'.repeat(50))
-    kv('Zone Signed', data.secureDNS.zoneSigned ? 'Yes' : 'No')
-    kv('Delegation Signed', data.secureDNS.delegationSigned ? 'Yes' : 'No')
+    const isSigned = data.secureDNS.zoneSigned || data.secureDNS.delegationSigned
+    kv('DNSSEC', isSigned ? 'Signed' : 'Unsigned')
   }
 
   // Nameservers
@@ -324,8 +362,9 @@ function buildDomainRdapText(data, queryInput) {
   })
 
 
-  // Notices & remarks
-  const notices = [...(data.notices || []), ...(data.remarks || [])]
+  // Notices & remarks (the "Last Update of RDAP Database" notice is shown
+  // above alongside the other date fields, so it's excluded here)
+  const notices = allNotices.filter(n => n !== lastUpdateNotice)
   if (notices.length) {
     push('')
     push('Notices')
@@ -362,9 +401,6 @@ function buildIpRdapText(data, queryInput) {
     push(`${(label + ':').padEnd(width)} ${value}`)
   }
 
-  push('RDAP IP NETWORK LOOKUP')
-  push('='.repeat(50))
-  push('')
 
   if (ipNetwork.startAddress && ipNetwork.endAddress) {
     kv('Network Range', `${ipNetwork.startAddress} - ${ipNetwork.endAddress}`)
@@ -444,6 +480,7 @@ export default function WhoisLookup() {
   const [queryType, setQueryType] = useState(null) // 'domain' or 'ip'
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  const [unsupportedTld, setUnsupportedTld] = useState(null) // { tld, link } | null
   const abortRef = useRef(null)
 
   const runLookup = useCallback(async () => {
@@ -461,14 +498,26 @@ export default function WhoisLookup() {
     }
 
     abortRef.current?.abort()
-    const controller = new AbortController()
-    abortRef.current = controller
 
-    setLoading(true)
     setError(null)
     setQueryInput(target)
     setRdapData(null)
     setQueryType(null)
+    setUnsupportedTld(null)
+
+    // Certain ccTLDs don't have an RDAP service at all — skip the request
+    // and send the user straight to the registry's own WHOIS lookup instead.
+    if (detectedType === 'domain') {
+      const tld = getTld(target)
+      if (NO_RDAP_TLDS.has(tld)) {
+        setUnsupportedTld({ tld, link: TLD_WHOIS_LINKS[tld] || null })
+        return
+      }
+    }
+
+    const controller = new AbortController()
+    abortRef.current = controller
+    setLoading(true)
 
     try {
       const result = await fetchRdap(target, controller.signal)
@@ -525,18 +574,35 @@ export default function WhoisLookup() {
         </button>
       </div>
 
-      {/* Query type indicator */}
-      {queryType && rdapData && !loading && (
-        <div className="mb-4 flex items-center gap-2 text-xs">
-          <span className="text-text">Query type:</span>
-          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full font-medium ${
-            isIPQuery
-              ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20'
-              : 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
-          }`}>
-            {isIPQuery ? <MapPin size={12} /> : <Globe size={12} />}
-            {isIPQuery ? 'IP Address' : 'Domain Name'}
-          </span>
+
+      {/* Unsupported TLD banner — RDAP isn't available for this ccTLD */}
+      {unsupportedTld && !loading && (
+        <div className="mb-5 p-4 rounded-2xl bg-orange-500/10 border border-orange-400/30 flex items-start gap-2.5">
+          <Info size={16} className="text-orange-400 shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm text-orange-400 font-medium m-0">
+              RDAP isn't supported for .{unsupportedTld.tld} domains
+            </p>
+            {unsupportedTld.link ? (
+              <p className="text-xs text-orange-400/80 m-0 mt-0.5">
+                Look this domain up directly on the registry's own WHOIS service:{' '}
+                <a
+                  href={unsupportedTld.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 underline hover:no-underline"
+                >
+                  {unsupportedTld.link}
+                  <ExternalLink size={11} />
+                </a>
+              </p>
+            ) : (
+              <p className="text-xs text-orange-400/80 m-0 mt-0.5">
+                This registry doesn't provide RDAP, and we don't have a direct WHOIS link for
+                this TLD yet. Please check with the .{unsupportedTld.tld} registry directly.
+              </p>
+            )}
+          </div>
         </div>
       )}
 
@@ -561,11 +627,11 @@ export default function WhoisLookup() {
 
       {/* Results — rendered as a full plain-text dump of the RDAP response */}
       {rdapData && !loading && (
-        <RdapTextDisplay title="RDAP Plain Text Format" text={outputText} />
+        <RdapTextDisplay text={outputText} />
       )}
 
       {/* Empty state */}
-      {!rdapData && !loading && !error && (
+      {!rdapData && !loading && !error && !unsupportedTld && (
         <div className="flex flex-col items-center justify-center py-16 text-center">
           <TerminalSquare size={32} className="text-accent mx-auto mb-2.5 sm:mb-3 sm:size-10" />
           <p className="text-sm text-textHeader font-medium m-0 mb-1">Enter a domain or IP to get started</p>
