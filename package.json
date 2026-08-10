@@ -1,7 +1,7 @@
 {
   "name": "rivo",
   "private": true,
-  "version": "2.15.51",
+  "version": "2.15.52",
   "type": "module",
   "scripts": {
     "dev": "vite",
