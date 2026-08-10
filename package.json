@@ -20,6 +20,7 @@
     "onnxruntime-web": "^1.21.0-dev.20250206-d981b153d3",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
+    "react-helmet-async": "^3.0.0",
     "react-leaflet": "^5.0.0",
     "react-spinners": "^0.17.0"
   },
