@@ -30,7 +30,7 @@ export default function PageHeader({ icon: Icon, title, description, badge = nul
           <h1 className="text-xl sm:text-2xl font-semibold text-textHeader m-0 flex items-center gap-2">
             {title}
             {badge && (
-              <span className="text-[10px] md:text-xs font-medium bg-accentBg text-accent border border-accentBorder px-1 md:px-2 md:py-0.5 rounded-md uppercase tracking-wide">
+              <span className="text-[10px] md:text-xs font-medium bg-[#680c92] text-white px-1 mb-1 md:px-2 md:py-0.5 rounded-md uppercase tracking-wide">
                 {badge}
               </span>
             )}
