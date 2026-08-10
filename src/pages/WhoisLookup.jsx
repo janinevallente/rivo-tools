@@ -220,16 +220,26 @@ function RdapTextDisplay({ text }) {
 
 // Builds one KV-style contact block (registrar / registrant / admin / tech /
 // billing / reseller...) from an RDAP entity. If the entity is entirely
-// absent, or every personal field on it is missing, the whole block is
-// printed as REDACTED FOR PRIVACY — which is what's actually happening on
-// most gTLD domains post-GDPR.
-function pushContactBlock(push, kv, heading, entity) {
+// absent, or every personal field on it is missing, the whole block prints
+// REDACTED FOR PRIVACY — which is what's actually happening on most gTLD
+// domains post-GDPR. Pass { redactedFieldLabel: 'Some Label' } to print it
+// as a kv line (e.g. "Registrant Contact Name : REDACTED FOR PRIVACY")
+// instead of the bare placeholder.
+function pushContactBlock(push, kv, heading, entity, options = {}) {
   push('')
   push(heading)
   push('-'.repeat(50))
 
+  const pushRedacted = () => {
+    if (options.redactedFieldLabel) {
+      kv(options.redactedFieldLabel, REDACTED_LABEL)
+    } else {
+      push(REDACTED_LABEL)
+    }
+  }
+
   if (!entity) {
-    push(REDACTED_LABEL)
+    pushRedacted()
     return
   }
 
@@ -278,7 +288,7 @@ function pushContactBlock(push, kv, heading, entity) {
     if (tel !== null) { kv(`${subRole} Phone`, tel); printedAny = true }
   })
 
-  if (!printedAny) push(REDACTED_LABEL)
+  if (!printedAny) pushRedacted()
 }
 
 // Renders the ENTIRE RDAP domain response as plain text — every field the
@@ -300,6 +310,21 @@ function buildDomainRdapText(data, queryInput) {
   // if (data.port43) kv('WHOIS Server', data.port43)
   // if (data.rdapConformance?.length) kv('RDAP Conformance', data.rdapConformance.join(', '))
 
+  // auDA-specific fields for .au domains — only shown when present in the response.
+  const isAuDomain = (data.ldhName ?? queryInput ?? '').toLowerCase().endsWith('.au')
+
+  // auData_statusReasons is an array of { auData_status, auData_statusReason: [...] }
+  const auStatusReasons = (data.auData_statusReasons || [])
+    .flatMap(r => r?.auData_statusReason || [])
+    .filter(Boolean)
+  if (isAuDomain && auStatusReasons.length) kv('Status Reason', auStatusReasons.join(', '))
+
+  // auData_eligibility is an array of { name, value } pairs, e.g.
+  // { name: "registrant name", value: "..." }. The values themselves are
+  // displayed under Registrant Contact below, not here.
+  const auEligibility = Array.isArray(data.auData_eligibility) ? data.auData_eligibility : []
+  const findEligibility = (name) => auEligibility.find(e => e?.name?.toLowerCase() === name)?.value
+
   const regDate = formatDate(findEventDate(data.events, 'registration'))
   const expDate = formatDate(findEventDate(data.events, 'expiration'))
   const updDate = formatDate(findEventDate(data.events, 'last changed'))
@@ -309,21 +334,13 @@ function buildDomainRdapText(data, queryInput) {
   kv('Last Updated', updDate)
   kv('Last Transferred', transferDate)
 
+  // "Last update of RDAP database" arrives as its own event (not a notice)
+  const lastUpdateEvent = (data.events || []).find(e => /last update of rdap database/i.test(e.eventAction || ''))
+
   const knownActions = new Set(['registration', 'expiration', 'last changed', 'transfer'])
   ;(data.events || [])
-    .filter(e => !knownActions.has(e.eventAction))
+    .filter(e => e !== lastUpdateEvent && !knownActions.has(e.eventAction))
     .forEach(e => kv(capitalizeWords(e.eventAction.replace(/_/g, ' ')), formatDate(e.eventDate)))
-
-  // "Last Update of RDAP Database" normally arrives as a notice rather than
-  // an event — pull it up next to the other date fields instead of leaving
-  // it buried in the Notices section below.
-  const allNotices = [...(data.notices || []), ...(data.remarks || [])]
-  const lastUpdateNotice = allNotices.find(n => /last update of rdap database/i.test(n.title || ''))
-  const lastUpdateRaw = lastUpdateNotice?.description?.[0]
-  const lastUpdateDate = lastUpdateRaw
-    ? ((d => (Number.isNaN(new Date(d).getTime()) ? d : formatDate(d)))(lastUpdateRaw))
-    : null
-  kv('Last Update Of RDAP Database', lastUpdateDate)
 
   // SGNIC returns a custom "sgNIC_verifiedID_Status" field on .sg domains
   // (e.g. "VerifiedID@SG-OK", "VerifiedID@SG-Pending"). Only shown when the
@@ -351,7 +368,18 @@ function buildDomainRdapText(data, queryInput) {
   const roleOrder = ['registrar', 'reseller', 'registrant', 'administrative', 'technical', 'billing']
   const seenRoles = new Set(roleOrder)
   roleOrder.forEach(role => {
-    pushContactBlock(push, kv, `${capitalizeWords(role)} Contact`, findEntity(data.entities, role))
+    const isAuRegistrant = role === 'registrant' && isAuDomain
+    pushContactBlock(
+      push, kv, `${capitalizeWords(role)} Contact`, findEntity(data.entities, role),
+      { redactedFieldLabel: isAuRegistrant ? 'Registrant Contact Name' : undefined }
+    )
+
+    // auDA eligibility fields belong under Registrant Contact, .au domains only
+    if (isAuRegistrant) {
+      kv('Registrant', findEligibility('registrant name'))
+      kv('Registrant ID', findEligibility('registrant id'))
+      kv('Eligibility Type', findEligibility('eligibility type'))
+    }
   })
 
   // Any entity carrying a role we didn't already cover
@@ -362,9 +390,16 @@ function buildDomainRdapText(data, queryInput) {
   })
 
 
+  // Last Update Of RDAP Database — shown directly above Notices
+  const lastUpdateDate = formatDate(lastUpdateEvent?.eventDate)
+  if (lastUpdateDate) {
+    push('')
+    push(`>>>>>>>> Last Update Of RDAP Database : ${lastUpdateDate} <<<<<<<<`)
+  }
+
   // Notices & remarks (the "Last Update of RDAP Database" notice is shown
   // above alongside the other date fields, so it's excluded here)
-  const notices = allNotices.filter(n => n !== lastUpdateNotice)
+  const notices = [...(data.notices || []), ...(data.remarks || [])]
   if (notices.length) {
     push('')
     push('Notices')
