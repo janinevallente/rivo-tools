@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react'
+import { Helmet } from 'react-helmet-async'
 import { Copy, Check, Shuffle } from 'lucide-react'
 import PageHeader from '../components/ui/PageHeader'
 
@@ -154,6 +155,9 @@ export default function TailwindShadowGenerator() {
 
   return (
     <div className="mx-auto px-5 md:px-10 py-8 font-poppins">
+      <Helmet>
+        <title>Rivo - Tailwind Shadow Generator</title>
+      </Helmet>
       <PageHeader
         title="Tailwind Shadow Generator"
         description="Build custom box-shadow utilities for Tailwind CSS v3 and v4."

@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useMemo } from 'react'
+import { Helmet } from 'react-helmet-async'
 import axios from 'axios'
 import { Modal } from 'antd'
 import {
@@ -176,6 +177,9 @@ export default function IpLookup() {
 
   return (
     <div className="mx-auto px-5 md:px-10 py-8 font-poppins">
+      <Helmet>
+        <title>Rivo - IP Address Lookup</title>
+      </Helmet>
       <PageHeader
         title="IP Address Lookup"
         description="View configuration details and geological metrics for your current public IP address."

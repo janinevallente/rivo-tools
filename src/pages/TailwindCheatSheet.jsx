@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback } from 'react'
+import { Helmet } from 'react-helmet-async'
 import { Search, Copy, Check } from 'lucide-react'
 import { Input } from 'antd'
 import PageHeader from '../components/ui/PageHeader'
@@ -44,6 +45,9 @@ export default function TailwindCheatSheet() {
 
   return (
     <div className="mx-auto px-5 md:px-10 py-8 font-poppins">
+      <Helmet>
+        <title>Rivo - Tailwind CSS Cheat Sheet</title>
+      </Helmet>
       <PageHeader
         title="Tailwind CSS Cheat Sheet"
         description="A quick reference for Tailwind CSS utility classes, their CSS equivalents, and sample usage."

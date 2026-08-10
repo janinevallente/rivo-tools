@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
+import { Helmet } from 'react-helmet-async'
 import { Copy, Check, RefreshCw, ShieldCheck, Info, Trash2 } from 'lucide-react'
 import { Checkbox } from 'antd'
 import { generatePassword, calculateEntropy, strengthFromEntropy } from '../utils/passwordUtils'
@@ -88,6 +89,9 @@ export default function PasswordGenerator() {
 
   return (
     <div className="mx-auto px-5 md:px-10 py-8 font-poppins">
+      <Helmet>
+        <title>Rivo - Password Generator</title>
+      </Helmet>
       <PageHeader
         title="Password Generator"
         description="Generate strong, random passwords using cryptographically secure randomness."

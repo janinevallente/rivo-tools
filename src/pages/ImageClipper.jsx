@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback } from 'react'
+import { Helmet } from 'react-helmet-async'
 import { Upload, Download, X, Loader2, Image as ImageIcon, Trash2 } from 'lucide-react'
 import PageHeader from '../components/ui/PageHeader'
 
@@ -109,6 +110,9 @@ export default function ImageClipper() {
 
   return (
     <div className="mx-auto px-5 md:px-10 py-8 font-poppins">
+      <Helmet>
+        <title>Rivo - Image Clipper</title>
+      </Helmet>
       <PageHeader
         title="Image Clipper"
         description="Automatically trim transparent edges from PNG images down to the tightest bounding box."

@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback } from 'react'
+import { Helmet } from 'react-helmet-async'
 import { Check, X, RefreshCw, Target, Loader2, Info, Shuffle } from 'lucide-react'
 import PageHeader from '../components/ui/PageHeader'
 import { 
@@ -241,6 +242,9 @@ export default function ContrastChecker() {
 
   return (
     <div className="mx-auto px-5 md:px-10 py-8 font-poppins">
+      <Helmet>
+        <title>Rivo - Contrast Checker</title>
+      </Helmet>    
       <PageHeader
         title="Contrast Checker"
         description="WCAG 2.1 color contrast compliance checker. Click fix buttons to automatically meet accessibility standards."

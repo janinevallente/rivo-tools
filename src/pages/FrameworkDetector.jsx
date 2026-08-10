@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef } from 'react'
+import { Helmet } from 'react-helmet-async'
 import {
   Cpu,
   Search,
@@ -320,6 +321,9 @@ export default function FrameworkDetector() {
 
   return (
     <div className="mx-auto px-5 md:px-10 py-8 font-poppins">
+      <Helmet>
+        <title>Rivo - Framework Detector</title>
+      </Helmet>
       <PageHeader
         title="Framework Detector"
         description="Detect the hosting platform, frontend framework, CDN, or deployment stack behind any website."

@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react'
+import { Helmet } from 'react-helmet-async'
 import { Copy, Check, Trash2, ShieldCheck } from 'lucide-react'
 import CryptoJS from 'crypto-js'
 import PageHeader from '../components/ui/PageHeader'
@@ -47,6 +48,9 @@ export default function HashGenerator() {
 
   return (
     <div className="mx-auto px-5 md:px-10 py-8 font-poppins">
+      <Helmet>
+        <title>Rivo - Hash Generator</title>
+      </Helmet>
       <PageHeader
         title="Hash Generator"
         description="Generate MD5, SHA-1, SHA-256, SHA-512, SHA-3, and RIPEMD-160 hashes from text."

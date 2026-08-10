@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
+import { Helmet } from 'react-helmet-async'
 import { 
   CircleDashed,
   Upload,
@@ -274,6 +275,9 @@ export default function CircleCropper() {
 
   return (
     <div className="mx-auto px-5 md:px-10 py-8 font-poppins">
+      <Helmet>
+        <title>Rivo - Circle Cropper</title>
+      </Helmet>
       <PageHeader
         title="Circle Cropper"
         description="Drag to move the circle, drag the handle to resize. Crop any image into a perfect circle."

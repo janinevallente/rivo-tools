@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react'
+import { Helmet } from 'react-helmet-async'
 import { Copy, Check } from 'lucide-react'
 import PageHeader from '../components/ui/PageHeader'
 import { Select } from 'antd'
@@ -115,6 +116,9 @@ export default function TailwindGridGenerator() {
 
   return (
     <div className="mx-auto px-5 md:px-10 py-8 font-poppins">
+      <Helmet>
+        <title>Rivo - Tailwind Grid Generator</title>
+      </Helmet>
       <PageHeader
         title="Tailwind Grid Generator"
         description="Visually build CSS grid layouts and copy the Tailwind CSS classes."

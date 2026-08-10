@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback } from 'react'
+import { Helmet } from 'react-helmet-async'
 import { Upload, Download, Image as ImageIcon, Trash2 } from 'lucide-react'
 import { removeBackground } from '@imgly/background-removal'
 import PageHeader from '../components/ui/PageHeader'
@@ -81,6 +82,9 @@ export default function BackgroundRemover() {
 
   return (
     <div className="mx-auto px-5 md:px-10 py-8 font-poppins">
+      <Helmet>
+        <title>Rivo - Background Remover</title>
+      </Helmet>
       <PageHeader
         title="Background Remover"
         description="Remove backgrounds from any image using AI — runs entirely in your browser. Output is a transparent PNG."

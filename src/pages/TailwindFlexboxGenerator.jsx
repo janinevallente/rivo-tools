@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react'
+import { Helmet } from 'react-helmet-async'
 import { Copy, Check, ExternalLink } from 'lucide-react'
 import { Select, Switch } from 'antd'
 import PageHeader from '../components/ui/PageHeader'
@@ -127,6 +128,9 @@ export default function TailwindFlexboxGenerator() {
 
   return (
     <div className="mx-auto px-5 md:px-10 py-8 font-poppins">
+      <Helmet>
+        <title>Rivo - Tailwind Flexbox Generator</title>
+      </Helmet>
       <PageHeader
         title="Tailwind Flexbox Generator"
         description="Generate Tailwind CSS classes for your Flexbox layouts."

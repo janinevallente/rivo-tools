@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef } from 'react'
+import { Helmet } from 'react-helmet-async'
 import {
   Search,
   Copy,
@@ -578,6 +579,9 @@ export default function WhoisLookup() {
 
   return (
     <div className="mx-auto px-5 md:px-10 py-8 font-poppins">
+      <Helmet>
+        <title>Rivo - WHOIS Lookup</title>
+      </Helmet>
       <PageHeader
         title="WHOIS Lookup"
         description="Look up domain registration via RDAP — works with both domain names and IPv4 addresses."

@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef } from 'react'
+import { Helmet } from 'react-helmet-async'
 import { Copy, Check, Plus, X, Shuffle, Download } from 'lucide-react'
 import { Select } from 'antd'
 import PageHeader from '../components/ui/PageHeader'
@@ -171,6 +172,9 @@ export default function GradientGenerator() {
 
   return (
     <div className="mx-auto px-5 md:px-10 py-8 font-poppins">
+      <Helmet>
+        <title>Rivo - Gradient Generator</title>
+      </Helmet>
       <PageHeader
         title="Gradient Generator"
         description="Create linear, radial, and conic gradients and copy the CSS or Tailwind classes."

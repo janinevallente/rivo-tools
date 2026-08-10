@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback } from 'react'
+import { Helmet } from 'react-helmet-async'
 import { Upload, Download, Copy, Check, X, Loader2 } from 'lucide-react'
 import JSZip from 'jszip'
 import PageHeader from '../components/ui/PageHeader'
@@ -177,6 +178,9 @@ export default function FaviconGenerator() {
 
   return (
     <div className="mx-auto px-5 md:px-10 py-8 font-poppins">
+      <Helmet>
+        <title>Rivo - Favicon Generator</title>
+      </Helmet>
       <PageHeader
         title="Favicon Generator"
         description="Generate favicons in all standard sizes from any image."

@@ -1,4 +1,5 @@
 import { useState, useCallback, useMemo, useRef } from 'react'
+import { Helmet } from 'react-helmet-async'
 import { SyncLoader } from 'react-spinners'
 import PageHeader from '../components/ui/PageHeader'
 import { getRequest } from '../api/apiClient'
@@ -465,6 +466,9 @@ export default function PageSpeedInsights() {
 
   return (
     <div className="mx-auto px-5 md:px-10 py-8 font-poppins">
+      <Helmet>
+        <title>Rivo - PageSpeed Insights</title>
+      </Helmet>
       <PageHeader
         title="PageSpeed Insights"
         description="Full Lighthouse + Chrome UX Report diagnostics for any page — performance, accessibility, best practices, and SEO."

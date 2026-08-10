@@ -1,4 +1,5 @@
 import { useState, useCallback, useMemo } from 'react'
+import { Helmet } from 'react-helmet-async'
 import { Copy, Check } from 'lucide-react'
 import { Select } from 'antd'
 import PageHeader from '../components/ui/PageHeader'
@@ -146,6 +147,9 @@ export default function ColorConverter() {
 
   return (
     <div className="mx-auto px-5 md:px-10 py-8 font-poppins">
+      <Helmet>
+        <title>Rivo - Color Converter</title>
+      </Helmet>
       <PageHeader
         title="Color Converter"
         description="Convert between color formats — HEX, RGB, decimal RGB, HSL, LAB, LCH, OKLAB, and OKLCH."

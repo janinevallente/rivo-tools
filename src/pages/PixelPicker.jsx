@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback } from 'react'
+import { Helmet } from 'react-helmet-async';
 import { Pipette, Upload, Copy, Check, X, Trash2 } from 'lucide-react'
 import PageHeader from '../components/ui/PageHeader'
 
@@ -135,7 +136,10 @@ export default function PixelPicker() {
   const pickedHex = picked ? hexFromRgb(picked.r, picked.g, picked.b) : null
 
   return (
-    <div className="mx-auto px-5 md:px-10 py-8 font-poppins"> 
+    <div className="mx-auto px-5 md:px-10 py-8 font-poppins">
+      <Helmet>
+        <title>Rivo - Pixel Picker</title>
+      </Helmet>
       <PageHeader
         title="Pixel Picker"
         description="Upload an image and click any pixel to pick its color. Get HEX, RGB, HSL, and OKLCH values instantly."

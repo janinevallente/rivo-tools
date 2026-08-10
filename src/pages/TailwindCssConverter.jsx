@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react'
+import { Helmet } from 'react-helmet-async';
 import { ArrowLeftRight, Copy, Check, Shuffle, RefreshCw, AlertCircle, X, Trash2 } from 'lucide-react'
 import PageHeader from '../components/ui/PageHeader'
 
@@ -294,6 +295,9 @@ export default function TailwindCssConverter() {
 
   return (
     <div className="mx-auto px-5 md:px-10 py-8 font-poppins">
+      <Helmet>
+        <title>Rivo - Tailwind to CSS Converter</title>
+      </Helmet>
       <PageHeader
         title={mode === 'tw-to-css' ? 'Tailwind → CSS Converter' : 'CSS → Tailwind Converter'}
         description="Instant local parsing engine running 100% on your client device"

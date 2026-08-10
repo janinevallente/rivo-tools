@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef } from 'react'
+import { Helmet } from 'react-helmet-async'
 import {
   Globe,
   Search,
@@ -191,6 +192,9 @@ export default function DnsLookup() {
 
   return (
     <div className="mx-auto px-5 md:px-10 py-8 font-poppins">
+      <Helmet>
+        <title>Rivo - DNS Lookup</title>
+      </Helmet>
       <PageHeader
         title="DNS Lookup"
         description="Query A, AAAA, CNAME, MX, NS, TXT, SOA, PTR, SRV, CAA, DS, and DNSKEY records for any domain."

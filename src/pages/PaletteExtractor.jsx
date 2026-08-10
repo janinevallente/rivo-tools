@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback } from 'react'
+import { Helmet } from 'react-helmet-async'
 import { Image as ImageIcon, Upload, X, Copy, Check, Trash2 } from 'lucide-react'
 import PageHeader from '../components/ui/PageHeader'
 import { rgbToHex } from '../utils/colorUtils'
@@ -128,6 +129,9 @@ export default function PaletteExtractor() {
 
   return (
     <div className="mx-auto px-5 md:px-10 py-8 font-poppins">
+      <Helmet>
+        <title>Rivo - Palette Extractor</title>
+      </Helmet>
       <PageHeader
         title="Palette Extractor"
         description="Extract a color palette from any image, right in your browser."
