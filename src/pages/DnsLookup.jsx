@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import { Helmet } from 'react-helmet-async'
 import {
   Globe,
@@ -13,6 +13,7 @@ import {
 import { SyncLoader } from 'react-spinners'
 import PageHeader from '../components/ui/PageHeader'
 import { getRequest } from '../api/apiClient'
+import { TOOL_CACHE_KEYS, saveToolCache, loadToolCache } from '../utils/toolResultCache'
 
 // Cloudflare's public DNS-over-HTTPS resolver — queried directly from the
 // browser. No server, no logs.
@@ -148,6 +149,16 @@ export default function DnsLookup() {
   const [copiedKey, setCopiedKey] = useState(null)
   const abortRef = useRef(null)
 
+  // Restore the last query's results on mount, so switching over to another
+  // tool (e.g. WHOIS Lookup) and back doesn't force a re-query.
+  useEffect(() => {
+    const cached = loadToolCache(TOOL_CACHE_KEYS.DNS_LOOKUP)
+    if (!cached) return
+    if (cached.inputValue) setInputValue(cached.inputValue)
+    if (cached.domain) setDomain(cached.domain)
+    if (cached.liveDns) setLiveDns(cached.liveDns)
+  }, [])
+
   const runLookup = useCallback(async () => {
     const target = normaliseHostname(inputValue)
 
@@ -172,6 +183,7 @@ export default function DnsLookup() {
     try {
       const result = await fetchLiveDnsRecords(target, controller.signal)
       setLiveDns(result)
+      saveToolCache(TOOL_CACHE_KEYS.DNS_LOOKUP, { inputValue: target, domain: target, liveDns: result })
     } catch (err) {
       if (err.name === 'AbortError') return
       setError(err.message ?? 'DNS lookup failed.')

@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import { Helmet } from 'react-helmet-async'
 import {
   Search,
@@ -15,6 +15,7 @@ import {
 import { SyncLoader } from 'react-spinners'
 import PageHeader from '../components/ui/PageHeader'
 import { getRdapRequest } from '../api/apiClient'
+import { TOOL_CACHE_KEYS, saveToolCache, loadToolCache } from '../utils/toolResultCache'
 
 // RDAP endpoints
 const RDAP_DOMAIN_BOOTSTRAP = 'https://rdap.org/domain/' //for domain query
@@ -519,6 +520,18 @@ export default function WhoisLookup() {
   const [unsupportedTld, setUnsupportedTld] = useState(null) // { tld, link } | null
   const abortRef = useRef(null)
 
+  // Restore the last query's results on mount, so switching over to another
+  // tool (e.g. DNS Lookup) and back doesn't force a re-query.
+  useEffect(() => {
+    const cached = loadToolCache(TOOL_CACHE_KEYS.WHOIS_LOOKUP)
+    if (!cached) return
+    if (cached.inputValue) setInputValue(cached.inputValue)
+    if (cached.queryInput) setQueryInput(cached.queryInput)
+    if (cached.rdapData) setRdapData(cached.rdapData)
+    if (cached.queryType) setQueryType(cached.queryType)
+    if (cached.unsupportedTld) setUnsupportedTld(cached.unsupportedTld)
+  }, [])
+
   const runLookup = useCallback(async () => {
     const target = normaliseInput(inputValue)
 
@@ -546,7 +559,11 @@ export default function WhoisLookup() {
     if (detectedType === 'domain') {
       const tld = getTld(target)
       if (NO_RDAP_TLDS.has(tld)) {
-        setUnsupportedTld({ tld, link: TLD_WHOIS_LINKS[tld] || null })
+        const unsupported = { tld, link: TLD_WHOIS_LINKS[tld] || null }
+        setUnsupportedTld(unsupported)
+        saveToolCache(TOOL_CACHE_KEYS.WHOIS_LOOKUP, {
+          inputValue: target, queryInput: target, rdapData: null, queryType: null, unsupportedTld: unsupported,
+        })
         return
       }
     }
@@ -559,6 +576,9 @@ export default function WhoisLookup() {
       const result = await fetchRdap(target, controller.signal)
       setRdapData(result.data)
       setQueryType(result.type)
+      saveToolCache(TOOL_CACHE_KEYS.WHOIS_LOOKUP, {
+        inputValue: target, queryInput: target, rdapData: result.data, queryType: result.type, unsupportedTld: null,
+      })
     } catch (err) {
       if (err.name === 'AbortError') return
       setError(err.message ?? 'Lookup failed.')
