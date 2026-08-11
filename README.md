@@ -11,7 +11,8 @@ A growing collection of fast, privacy-first tech utilities that run entirely in 
 - **Direct-to-API network tools** — DNS, WHOIS, IP, and PageSpeed Insights lookups talk straight from your browser to the relevant public API, so requests never pass through Rivo's own servers
 - **On-device ML background removal** — client-side image segmentation via ONNX Runtime Web, no image ever uploaded anywhere
 - **DNS-over-HTTPS lookups** — queries Cloudflare's public DoH resolver directly for A, AAAA, CNAME, MX, NS, TXT, SOA, PTR, SRV, CAA, DS, and DNSKEY records
-- **RDAP-based WHOIS** — domain and IP registration lookups via RDAP, rendered as a full plain-text dump
+- **RDAP-based WHOIS** — domain and IP registration lookups via RDAP, rendered as a full plain-text dump, with registry-specific extensions surfaced for `.sg` (Verified ID status) and `.au` (auDA eligibility/status reason data), and a direct link to the registry's own WHOIS page for ccTLDs RDAP doesn't cover
+- **Cross-tool result caching** — DNS Lookup and WHOIS Lookup persist their last query's result to `localStorage`, so switching between them (or reloading) restores what you were looking at instead of forcing a re-query
 - **Lighthouse-powered auditing** — PageSpeed Insights and Framework Detector both run real Lighthouse audits against a target URL for accurate, JS-aware results
 - **Interactive color tools** — color wheel with harmony exploration, palette extraction from images, WCAG contrast auto-fixing, and conversion across HEX/RGB/HSL/LAB/LCH/OKLAB/OKLCH
 - **Tailwind CSS toolset** — bidirectional Tailwind ⇄ CSS conversion, visual grid/flexbox/shadow builders, and a searchable utility class cheat sheet
@@ -23,19 +24,19 @@ A growing collection of fast, privacy-first tech utilities that run entirely in 
 
 ## Tech Stack
 
-| Layer         | Technology                                                                                                                   |
-| ------------- | -----------------------------------------------------------------------------------------------------------------------------|
-| Framework     | [Vite](https://vite.dev) + [React 19](https://react.dev)                                                                     |
-| Styling       | [Tailwind CSS v3](https://tailwindcss.com)                                                                                   |
-| UI Components | [Ant Design](https://ant.design)                                                                                             |
-| Icons         | [Lucide React](https://lucide.dev)                                                                                           |
-| Maps          | [Leaflet](https://leafletjs.com) / [React Leaflet](https://react-leaflet.js.org)                                             |
+| Layer           | Technology                                                                                                                 |
+| --------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| Framework       | [Vite](https://vite.dev) + [React 19](https://react.dev)                                                                   |
+| Styling         | [Tailwind CSS v3](https://tailwindcss.com)                                                                                 |
+| UI Components   | [Ant Design](https://ant.design)                                                                                           |
+| Icons           | [Lucide React](https://lucide.dev)                                                                                         |
+| Maps            | [Leaflet](https://leafletjs.com) / [React Leaflet](https://react-leaflet.js.org)                                           |
 | ML (in-browser) | [ONNX Runtime Web](https://onnxruntime.ai) via [@imgly/background-removal](https://github.com/imgly/background-removal-js) |
-| Crypto        | [crypto-js](https://github.com/brix/crypto-js), Web Crypto API                                                               |
-| HTTP          | [Axios](https://axios-http.com)                                                                                              |
-| Utilities     | [JSZip](https://stuk.github.io/jszip/)                                                                                       |
-| Fonts         | Poppins via Google Fonts                                                                                                     |
-| Deployment    | [Netlify](https://netlify.com)                                                                                               |
+| Crypto          | [crypto-js](https://github.com/brix/crypto-js), Web Crypto API                                                             |
+| HTTP            | [Axios](https://axios-http.com)                                                                                            |
+| Utilities       | [JSZip](https://stuk.github.io/jszip/)                                                                                     |
+| Fonts           | Poppins via Google Fonts                                                                                                   |
+| Deployment      | [Netlify](https://netlify.com)                                                                                             |
 
 ---
 
@@ -61,7 +62,8 @@ src/
 ├── utils/
 │   ├── colorUtils.js                 # Color space conversions (HEX/RGB/HSL/LAB/OKLCH...)
 │   ├── passwordUtils.js              # Cryptographically random password generation
-│   └── pageSpeedUtils.js             # PageSpeed Insights request building + response parsing
+│   ├── pageSpeedUtils.js             # PageSpeed Insights request building + response parsing
+│   └── toolResultCache.js            # Generic localStorage cache so tools can restore their last result across navigation
 └── pages/                            # One component per tool (see Available Tools below)
 ```
 
@@ -121,15 +123,17 @@ npm run preview
 ## Available Tools
 
 ### Image & Assets
-| Tool               | Description                                                                                        |
-| ------------------ | ---------------------------------------------------------------------------------------------------|
-| Background Remover | Removes backgrounds from images on-device via ONNX Runtime Web. Exports as transparent PNG.        |
-| Image Converter    | Converts between PNG, JPEG, WebP, BMP, TIFF, and AVIF, with batch processing and resize options.   |
-| Image Clipper      | Automatically trims transparent edges from PNG images.                                             |
-| Circle Cropper     | Crops any image into a circle with a draggable, resizable overlay.                                 |
-| Favicon Generator  | Generates favicons from 16×16 to 512×512, plus `.ico`, Apple Touch, Android, and PWA icons.        |
+
+| Tool               | Description                                                                                      |
+| ------------------ | ------------------------------------------------------------------------------------------------ |
+| Background Remover | Removes backgrounds from images on-device via ONNX Runtime Web. Exports as transparent PNG.      |
+| Image Converter    | Converts between PNG, JPEG, WebP, BMP, TIFF, and AVIF, with batch processing and resize options. |
+| Image Clipper      | Automatically trims transparent edges from PNG images.                                           |
+| Circle Cropper     | Crops any image into a circle with a draggable, resizable overlay.                               |
+| Favicon Generator  | Generates favicons from 16×16 to 512×512, plus `.ico`, Apple Touch, Android, and PWA icons.      |
 
 ### Colors
+
 | Tool               | Description                                                                             |
 | ------------------ | --------------------------------------------------------------------------------------- |
 | Pixel Picker       | Picks colors from any image — outputs HEX, RGB, HSL, and OKLCH.                         |
@@ -140,6 +144,7 @@ npm run preview
 | Palette Extractor  | Extracts dominant color palettes from any image.                                        |
 
 ### Tailwind
+
 | Tool                       | Description                                                                      |
 | -------------------------- | -------------------------------------------------------------------------------- |
 | Tailwind to CSS Converter  | Converts Tailwind utility strings to raw CSS, and parses CSS back into Tailwind. |
@@ -148,19 +153,22 @@ npm run preview
 | Tailwind Shadow Generator  | Builds layered box/inline shadows for Tailwind v3 and v4.                        |
 
 ### Network
-| Tool              | Description                                                                                         |
-| ----------------- | --------------------------------------------------------------------------------------------------- |
-| IP Address Lookup | Your public IP, ISP, and geolocation, with an interactive map.                                      |
-| DNS Lookup        | Queries A, AAAA, CNAME, MX, NS, TXT, SOA, PTR, SRV, CAA, DS, and DNSKEY records via DNS-over-HTTPS. |
-| WHOIS Lookup      | Domain/IP registration data via RDAP, rendered as a full plain-text dump.                           |
+
+| Tool              | Description                                                                                                                                                                                                                                                                                       |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| IP Address Lookup | Your public IP, ISP, and geolocation, with an interactive map.                                                                                                                                                                                                                                    |
+| DNS Lookup        | Queries A, AAAA, CNAME, MX, NS, TXT, SOA, PTR, SRV, CAA, DS, and DNSKEY records via DNS-over-HTTPS. Last result persists across tool switches.                                                                                                                                                    |
+| WHOIS Lookup      | Domain/IP registration data via RDAP, rendered as a full plain-text dump. Surfaces `.sg` Verified ID status and `.au` auDA eligibility/status-reason fields where present, and links to the registry's own WHOIS page for ccTLDs without RDAP support. Last result persists across tool switches. |
 
 ### Web & Performance
-| Tool                | Description                                                                                                                           |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| PageSpeed Insights  | Full Lighthouse + CrUX audit — performance, accessibility, best practices, SEO.                                                       |
-| Framework Detector  | Identifies the hosting platform, frontend framework, and deployment stack behind any site via DNS and asset fingerprinting, plus Lighthouse's own stack-pack detection. |
+
+| Tool               | Description                                                                                                                                                             |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| PageSpeed Insights | Full Lighthouse + CrUX audit — performance, accessibility, best practices, SEO.                                                                                         |
+| Framework Detector | Identifies the hosting platform, frontend framework, and deployment stack behind any site via DNS and asset fingerprinting, plus Lighthouse's own stack-pack detection. |
 
 ### Security
+
 | Tool               | Description                                                    |
 | ------------------ | -------------------------------------------------------------- |
 | Password Generator | Cryptographically random passwords via `window.crypto`.        |
@@ -168,6 +176,7 @@ npm run preview
 | Symmetric Cipher   | Encrypt/decrypt with AES, DES, Triple DES, RC4, or Rabbit.     |
 
 ### Reference
+
 | Tool                     | Description                                                                  |
 | ------------------------ | ---------------------------------------------------------------------------- |
 | Tailwind CSS Cheat Sheet | Searchable reference for Tailwind utility classes and their CSS equivalents. |
@@ -183,6 +192,17 @@ Every tool is registered in three places:
 3. **`src/App.jsx`** — lazy-import the page component and add a `case '<id>': return <YourTool />` to the router switch.
 
 The tool itself lives in `src/pages/YourTool.jsx` as a self-contained component (no shared state beyond what it fetches or computes itself).
+
+### Persisting a Tool's Results
+
+If a tool's result should survive the user navigating to another tool and back (like DNS Lookup and WHOIS Lookup do), wire it up to `src/utils/toolResultCache.js`:
+
+1. Add a unique id for the tool to `TOOL_CACHE_KEYS`.
+2. After a successful query, call `saveToolCache(TOOL_CACHE_KEYS.YOUR_TOOL, { ...whatever state should be restored })`. Treat failures as a result too — call `saveToolCache` in the error path as well (with the data fields nulled out and an `error` message included) so a tool switch and back reflects the last _outcome_, not a stale success.
+3. In a `useEffect` on mount, call `loadToolCache(TOOL_CACHE_KEYS.YOUR_TOOL)` and, if it returns non-null, use it to hydrate initial state.
+4. Optionally call `clearToolCache(TOOL_CACHE_KEYS.YOUR_TOOL)` if the tool has a "clear results" action.
+
+Cached data is versioned internally, so a shape change to what you save won't break on old cached entries — they're just ignored. Everything is wrapped in try/catch and no-ops on failure (private browsing, storage quota, etc.), so it's safe to add without extra error handling on the caller's side.
 
 ---
 
