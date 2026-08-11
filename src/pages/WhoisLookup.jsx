@@ -521,15 +521,18 @@ export default function WhoisLookup() {
   const abortRef = useRef(null)
 
   // Restore the last query's results on mount, so switching over to another
-  // tool (e.g. DNS Lookup) and back doesn't force a re-query.
+  // tool (e.g. DNS Lookup) and back doesn't force a re-query. This mirrors
+  // whatever the last *terminal* state was — success, an unsupported TLD,
+  // or an error — never a stale success left over from an earlier query.
   useEffect(() => {
     const cached = loadToolCache(TOOL_CACHE_KEYS.WHOIS_LOOKUP)
     if (!cached) return
     if (cached.inputValue) setInputValue(cached.inputValue)
     if (cached.queryInput) setQueryInput(cached.queryInput)
-    if (cached.rdapData) setRdapData(cached.rdapData)
-    if (cached.queryType) setQueryType(cached.queryType)
-    if (cached.unsupportedTld) setUnsupportedTld(cached.unsupportedTld)
+    setRdapData(cached.rdapData ?? null)
+    setQueryType(cached.queryType ?? null)
+    setUnsupportedTld(cached.unsupportedTld ?? null)
+    setError(cached.error ?? null)
   }, [])
 
   const runLookup = useCallback(async () => {
@@ -562,7 +565,7 @@ export default function WhoisLookup() {
         const unsupported = { tld, link: TLD_WHOIS_LINKS[tld] || null }
         setUnsupportedTld(unsupported)
         saveToolCache(TOOL_CACHE_KEYS.WHOIS_LOOKUP, {
-          inputValue: target, queryInput: target, rdapData: null, queryType: null, unsupportedTld: unsupported,
+          inputValue: target, queryInput: target, rdapData: null, queryType: null, unsupportedTld: unsupported, error: null,
         })
         return
       }
@@ -577,11 +580,17 @@ export default function WhoisLookup() {
       setRdapData(result.data)
       setQueryType(result.type)
       saveToolCache(TOOL_CACHE_KEYS.WHOIS_LOOKUP, {
-        inputValue: target, queryInput: target, rdapData: result.data, queryType: result.type, unsupportedTld: null,
+        inputValue: target, queryInput: target, rdapData: result.data, queryType: result.type, unsupportedTld: null, error: null,
       })
     } catch (err) {
       if (err.name === 'AbortError') return
-      setError(err.message ?? 'Lookup failed.')
+      const message = err.message ?? 'Lookup failed.'
+      setError(message)
+      // A failed query is still a terminal state — overwrite the cache so a
+      // tool switch and back shows this failure, not the previous success.
+      saveToolCache(TOOL_CACHE_KEYS.WHOIS_LOOKUP, {
+        inputValue: target, queryInput: target, rdapData: null, queryType: null, unsupportedTld: null, error: message,
+      })
     } finally {
       setLoading(false)
     }
