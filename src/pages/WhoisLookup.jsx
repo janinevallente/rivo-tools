@@ -27,7 +27,23 @@ const REDACTED_LABEL = 'REDACTED FOR PRIVACY'
 // so we short-circuit and point the user to the registry's own WHOIS lookup
 // instead of burning a request and showing a generic error.
 const NO_RDAP_TLDS = new Set([
-  'cn', 'de', 'ru', 'eu', 'jp', 'kr', 'tw', 'hk', 'my', 'th', 'vn', 'ph', 'id',
+  'ph',
+  'cn',
+  'de',
+  'eu',
+  'jp',
+  'hk',
+  'my',
+  'vn',
+  'es',
+  'nz',
+  'za',
+  'li',
+  'it',
+  'ch',
+  'dk',
+  'ie',
+  'be'
 ])
 
 // Where to send the user to look a domain up manually, keyed by TLD.
@@ -35,24 +51,23 @@ const NO_RDAP_TLDS = new Set([
 // if a NO_RDAP_TLDS entry isn't in this map, we just say so without
 // guessing at a link.
 const TLD_WHOIS_LINKS = {
-  au: 'https://whois.auda.org.au/',
-  sg: 'https://sgnic.sg/',
-  ai: 'http://whois.nic.ai/',
-  ch: 'https://www.nic.ch/whois/',
-  cn: 'https://webwhois.cnnic.cn/WelcomeServlet',
-  dk: 'https://whois.domaintools.com/',
-  es: 'https://www.dominios.es/en',
-  eu: 'https://www.eurodns.com/whois-search/es-domain-name',
-  fr: 'https://www.afnic.fr/en/domain-names-and-support/everything-there-is-to-know-about-domain-names/find-a-domain-name-or-a-holder-using-whois/',
-  in: 'https://whois.nixiregistry.in/',
-  it: 'https://web-whois.nic.it/result',
-  li: 'https://www.nic.li/',
-  nz: 'https://dnc.org.nz/whois/whois-lookup/',
-  no: 'https://www.norid.no/en/domeneoppslag/hvem-har-domenenavnet/',
-  uk: 'https://nominet.uk/lookup/',
-  za: 'https://zarc.web.za/whois/',
-  my: 'https://mynic.my/whois/',
   ph: 'https://whois.dot.ph/',
+  cn: 'https://webwhois.cnnic.cn/WelcomeServlet',
+  de: 'https://www.eurodns.com/whois-search/de-domain-name',
+  eu: 'https://www.eurodns.com/whois-search/eu-domain-name',
+  jp: 'https://whois.jprs.jp/en/',
+  hk: 'https://www.hkirc.hk/en/whois/',
+  my: 'https://mynic.my/whois/',
+  vn: 'https://vnnic.vn/en/whois-information',
+  es: 'https://www.dominios.es/en',
+  nz: 'https://dnc.org.nz/whois/whois-lookup/',
+  za: 'https://zarc.web.za/whois/',
+  li: 'https://www.nic.li/',
+  it: 'https://www.nic.it/en/find-your-it/web-whois',
+  ch: 'https://www.nic.ch/whois/',
+  dk: 'https://whois.domaintools.com/',
+  ie: 'https://whois.lookup.ie/',
+  be: 'https://www.eurodns.com/whois-search/be-domain-name'
 }
 
 function getTld(domain) {
