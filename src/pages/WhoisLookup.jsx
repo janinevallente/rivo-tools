@@ -43,7 +43,10 @@ const NO_RDAP_TLDS = new Set([
   'ch',
   'dk',
   'ie',
-  'be'
+  'be',
+  'io',
+  'me',
+  'us',
 ])
 
 // Where to send the user to look a domain up manually, keyed by TLD.
@@ -67,7 +70,10 @@ const TLD_WHOIS_LINKS = {
   ch: 'https://www.nic.ch/whois/',
   dk: 'https://whois.domaintools.com/',
   ie: 'https://whois.lookup.ie/',
-  be: 'https://www.eurodns.com/whois-search/be-domain-name'
+  be: 'https://www.eurodns.com/whois-search/be-domain-name',
+  io: 'https://nic.io/whois-search.htm',
+  me: 'https://www.eurodns.com/whois-search/me-domain-name',
+  us: 'https://whois.nic.us/',
 }
 
 function getTld(domain) {
