@@ -165,6 +165,12 @@ export default function DnsLookup() {
   const runLookup = useCallback(async () => {
     const target = normaliseHostname(inputValue)
 
+    // Clear any previous result up front, before validation — otherwise a
+    // failed re-query (empty input, malformed input, or a real DoH failure)
+    // leaves the last successful lookup rendered underneath the "Lookup
+    // failed" banner instead of replacing it.
+    setLiveDns(null)
+
     if (!target) {
       setError('Please enter a domain name.')
       return
@@ -181,7 +187,6 @@ export default function DnsLookup() {
     setLoading(true)
     setError(null)
     setDomain(target)
-    setLiveDns(null)
 
     try {
       const result = await fetchLiveDnsRecords(target, controller.signal)
@@ -265,7 +270,7 @@ export default function DnsLookup() {
       )}
 
       {/* Results */}
-      {liveDns && !loading && (
+      {liveDns && !loading && !error && (
         <SectionCard icon={Network} title="DNS Records">
           <div className="flex flex-col gap-4">
             {LIVE_RECORD_TYPES.map(type => {

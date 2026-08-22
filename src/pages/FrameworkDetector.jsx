@@ -279,6 +279,13 @@ export default function FrameworkDetector() {
 
   const run = useCallback(async () => {
     const hostname = normaliseHostname(inputValue)
+
+    // Clear any previous result up front, before validation — otherwise a
+    // failed re-query (invalid input, or a real DNS/PSI failure) leaves the
+    // last successful detection rendered underneath the "Detection failed"
+    // banner instead of replacing it.
+    setResults(null)
+
     if (!hostname || !isValidHostname(hostname)) {
       setError('Please enter a valid domain, e.g. example.com')
       return
@@ -290,7 +297,6 @@ export default function FrameworkDetector() {
 
     setLoading(true)
     setError(null)
-    setResults(null)
     setQueryHost(hostname)
 
     try {
@@ -378,7 +384,7 @@ export default function FrameworkDetector() {
       )}
 
       {/* Results Table */}
-      {results && !loading && (
+      {results && !loading && !error && (
         <div className="flex flex-col gap-4">
           {results.length > 0 ? (
             <div className="rounded-2xl border border-borderColor bg-backgroundCard overflow-hidden shadow-sm">
