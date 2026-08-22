@@ -92,7 +92,6 @@ npm install
 Only the **PageSpeed Insights** and **Framework Detector** tools need configuration — everything else works out of the box with no keys. Create a `.env` file in the project root:
 
 ```bash
-VITE_PAGESPEED_API=https://www.googleapis.com/pagespeedonline/v5/runPagespeed
 VITE_PAGESPEED_API_KEY=your_google_pagespeed_api_key
 ```
 

@@ -1,7 +1,7 @@
 // PageSpeed Insights (v5) helpers — API key storage, request construction,
 // and parsing of the (large, deeply nested) Lighthouse + CrUX payload into
 // flat structures the UI can render without re-walking the raw JSON.
-export const PAGESPEED_API = import.meta.env.VITE_PAGESPEED_API
+export const PAGESPEED_API = 'https://www.googleapis.com/pagespeedonline/v5/runPagespeed'
 export const PAGESPEED_API_KEY = import.meta.env.VITE_PAGESPEED_API_KEY || ''
 
 export const CATEGORY_IDS = ['performance', 'accessibility', 'best-practices', 'seo']

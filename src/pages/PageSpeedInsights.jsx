@@ -388,7 +388,7 @@ function CategoryReport({ report }) {
 
 export default function PageSpeedInsights() {
   const [inputValue, setInputValue] = useState('')
-  const [strategy, setStrategy] = useState('mobile')
+  const [strategy, setStrategy] = useState('desktop')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [result, setResult] = useState(null)
@@ -452,17 +452,6 @@ export default function PageSpeedInsights() {
   const filmstrip = useMemo(() => (lh ? getScreenshotThumbnails(lh) : null), [lh])
   const finalScreenshot = useMemo(() => (lh ? getFinalScreenshot(lh) : null), [lh])
   const stackPacks = useMemo(() => (lh ? getStackPacks(lh) : []), [lh])
-
-  const downloadJson = () => {
-    if (!result) return
-    const blob = new Blob([JSON.stringify(result, null, 2)], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `pagespeed-${strategy}-${(lh?.requestedUrl || 'report').replace(/^https?:\/\//, '').replace(/[^a-z0-9]+/gi, '-')}.json`
-    a.click()
-    URL.revokeObjectURL(url)
-  }
 
   return (
     <div className="mx-auto px-5 md:px-10 py-8 font-poppins">
@@ -539,11 +528,11 @@ export default function PageSpeedInsights() {
 
       {/* Error banner */}
       {error && (
-        <div className="mb-5 p-4 rounded-2xl bg-errorBg border border-errorBorder flex items-start gap-2.5">
-          <CircleX size={16} className="text-error shrink-0 mt-0.5" />
+        <div className="mb-5 p-4 rounded-2xl bg-red-500/10 border border-red-400/30 flex items-start gap-2.5">
+          <CircleX size={16} className="text-red-400 shrink-0 mt-0.5" />
           <div>
-            <p className="text-sm text-error font-medium m-0">Analysis failed</p>
-            <p className="text-xs text-error/80 m-0 mt-0.5">{error}</p>
+            <p className="text-sm text-red-400 font-medium m-0">Analysis failed</p>
+            <p className="text-xs text-red-400/80 m-0 mt-0.5">{error}</p>
           </div>
         </div>
       )}
@@ -580,12 +569,6 @@ export default function PageSpeedInsights() {
                 Analyzed {lh.fetchTime ? new Date(lh.fetchTime).toLocaleString() : 'just now'} · {strategy === 'mobile' ? 'Mobile' : 'Desktop'} emulation · Lighthouse {lh.lighthouseVersion}
               </p>
             </div>
-            <button
-              onClick={downloadJson}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium bg-backgroundColor border border-borderColor text-text hover:text-accent cursor-pointer transition-colors shrink-0 self-start sm:self-center"
-            >
-              <Download size={13} /> Raw JSON
-            </button>
           </div>
 
           {/* Score gauges */}
