@@ -328,7 +328,6 @@ function buildDomainRdapText(data, queryInput) {
 
   kv('Domain Name', data.ldhName ?? queryInput)
   if (data.unicodeName && data.unicodeName !== data.ldhName) kv('Unicode Name', data.unicodeName)
-  kv('Registry Domain ID', data.handle)
   if (data.status?.length) kv('Status', data.status.map(s => capitalizeWords(s.replace(/_/g, ' '))).join(', '))
   // if (data.port43) kv('WHOIS Server', data.port43)
   // if (data.rdapConformance?.length) kv('RDAP Conformance', data.rdapConformance.join(', '))
@@ -559,6 +558,14 @@ export default function WhoisLookup() {
   const runLookup = useCallback(async () => {
     const target = normaliseInput(inputValue)
 
+    // Clear any previous result up front, before validation — otherwise a
+    // failed re-query (empty input, malformed input, or a real RDAP
+    // failure) leaves the last successful lookup rendered underneath the
+    // "Lookup failed" banner instead of replacing it.
+    setRdapData(null)
+    setQueryType(null)
+    setUnsupportedTld(null)
+
     if (!target) {
       setError('Please enter a domain name or IP address.')
       return
@@ -574,9 +581,6 @@ export default function WhoisLookup() {
 
     setError(null)
     setQueryInput(target)
-    setRdapData(null)
-    setQueryType(null)
-    setUnsupportedTld(null)
 
     // Certain ccTLDs don't have an RDAP service at all — skip the request
     // and send the user straight to the registry's own WHOIS lookup instead.
@@ -716,7 +720,7 @@ export default function WhoisLookup() {
       )}
 
       {/* Results — rendered as a full plain-text dump of the RDAP response */}
-      {rdapData && !loading && (
+      {rdapData && !loading && !error && (
         <RdapTextDisplay text={outputText} />
       )}
 
