@@ -3,6 +3,7 @@ import { SyncLoader } from 'react-spinners'
 import Sidebar from './components/ui/Sidebar'
 import AntThemeProvider from './components/themes/AntThemeProvider'
 import Home from './pages/Home'
+// import Settings from './pages/Settings'
 import './index.css'
 
 const BackgroundRemover = lazy(() => import('./pages/BackgroundRemover'))
@@ -29,6 +30,7 @@ const PasswordGenerator = lazy(() => import('./pages/PasswordGenerator'))
 const HashGenerator = lazy(() => import('./pages/HashGenerator'))
 const SymmetricCipher = lazy(() => import('./pages/SymmetricCipher'))
 const TailwindCheatSheet = lazy(() => import('./pages/TailwindCheatSheet'))
+const Settings = lazy(() => import('./pages/Settings'))
 
 function PageLoader() {
   return (
@@ -84,6 +86,7 @@ function App() {
       case 'hash-generator': return <HashGenerator />
       case 'symmetric-cipher': return <SymmetricCipher />
       case 'tailwind-cheat-sheet': return <TailwindCheatSheet />
+      case 'settings': return <Settings />
       
 
       default: return <Home onSelectTool={navigateTo} />

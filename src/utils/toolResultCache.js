@@ -64,3 +64,21 @@ export function clearToolCache(toolId) {
     // ignore
   }
 }
+
+// Clears every tool's cached result at once (used by Settings -> "Clear
+// Tool Cache"). Only removes keys under STORAGE_PREFIX ("rivo:toolCache:"),
+// so this can never touch unrelated storage
+// Returns the number of entries that were cleared.
+export function clearAllToolCaches() {
+  try {
+    const keysToRemove = []
+    for (let i = 0; i < window.localStorage.length; i++) {
+      const key = window.localStorage.key(i)
+      if (key && key.startsWith(STORAGE_PREFIX)) keysToRemove.push(key)
+    }
+    keysToRemove.forEach(key => window.localStorage.removeItem(key))
+    return keysToRemove.length
+  } catch {
+    return 0
+  }
+}

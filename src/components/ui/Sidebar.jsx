@@ -27,14 +27,12 @@ import {
   KeyRound,
   Hash,
   Lock,
-  Sun,
-  Moon,
+  Settings as SettingsIcon,
   Star,
   Gauge,
   Fingerprint,
   Cpu
 } from 'lucide-react'
-import { useTheme } from '../themes/ThemeContext'
 
 const VERSION = __APP_VERSION__
 
@@ -103,7 +101,6 @@ const categories = [
 export default function Sidebar({ activeTool, onSelectTool }) {
   const [collapsed, setCollapsed] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
-  const { themeMode, toggleTheme } = useTheme()
 
   const handleSelect = (id) => {
     onSelectTool(id)
@@ -155,12 +152,12 @@ export default function Sidebar({ activeTool, onSelectTool }) {
           </button>
           <div className="flex items-center gap-1">
             <button
-              onClick={toggleTheme}
+              onClick={() => handleSelect('settings')}
               className="bg-transparent border-none cursor-pointer text-text p-1.5 rounded-lg hover:bg-accentBg hover:text-accent transition-colors"
-              aria-label="Toggle color theme"
-              title={themeMode === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+              aria-label="Settings"
+              title="Settings"
             >
-              {themeMode === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
+              <SettingsIcon size={20} />
             </button>
             <button
               onClick={() => setMobileOpen(!mobileOpen)}
@@ -208,6 +205,21 @@ export default function Sidebar({ activeTool, onSelectTool }) {
                 ))}
               </div>
             ))}
+
+            {/* Settings */}
+            <div className="pt-1 mt-1 border-t border-borderColor">
+              <button
+                onClick={() => handleSelect('settings')}
+                className={`flex items-center gap-3 px-4 py-2.5 mt-1 rounded-lg text-sm font-medium w-full text-left border-none cursor-pointer transition-colors ${
+                  activeTool === 'settings'
+                    ? 'bg-accentBg text-accent'
+                    : 'bg-transparent text-text hover:bg-accentBg hover:text-accent'
+                }`}
+              >
+                <SettingsIcon size={16} />
+                Settings
+              </button>
+            </div>
           </div>
         )}
       </div>
@@ -255,27 +267,9 @@ export default function Sidebar({ activeTool, onSelectTool }) {
           ))}
         </nav>
 
-        {/* Theme toggle */}
+        {/* Settings */}
         <div className={`border-t border-borderColor flex ${collapsed ? 'justify-center py-2' : 'px-2 py-2'}`}>
-          {collapsed ? (
-            <Tooltip title={themeMode === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'} placement="right">
-              <button
-                onClick={toggleTheme}
-                className="flex items-center justify-center px-[10px] py-2.5 rounded-lg border-none bg-transparent text-text cursor-pointer hover:bg-accentBg hover:text-accent transition-colors w-full"
-                aria-label="Toggle color theme"
-              >
-                {themeMode === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
-              </button>
-            </Tooltip>
-          ) : (
-            <button
-              onClick={toggleTheme}
-              className="flex items-center gap-2.5 px-3 py-2 rounded-lg border-none bg-transparent text-text text-sm cursor-pointer hover:bg-accentBg hover:text-accent transition-colors w-full text-left"
-            >
-              {themeMode === 'dark' ? <Sun size={16} className="shrink-0" /> : <Moon size={16} className="shrink-0" />}
-              {themeMode === 'dark' ? 'Light mode' : 'Dark mode'}
-            </button>
-          )}
+          <NavItem id="settings" label="Settings" icon={SettingsIcon} />
         </div>
 
         {/* Version */}
