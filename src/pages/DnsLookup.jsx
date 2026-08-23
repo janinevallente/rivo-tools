@@ -154,12 +154,16 @@ export default function DnsLookup() {
   // whatever the last *terminal* state was — success or an error — never a
   // stale success left over from an earlier query.
   useEffect(() => {
-    const cached = loadToolCache(TOOL_CACHE_KEYS.DNS_LOOKUP)
-    if (!cached) return
-    if (cached.inputValue) setInputValue(cached.inputValue)
-    if (cached.domain) setDomain(cached.domain)
-    setLiveDns(cached.liveDns ?? null)
-    setError(cached.error ?? null)
+    let cancelled = false
+    ;(async () => {
+      const cached = await loadToolCache(TOOL_CACHE_KEYS.DNS_LOOKUP)
+      if (cancelled || !cached) return
+      if (cached.inputValue) setInputValue(cached.inputValue)
+      if (cached.domain) setDomain(cached.domain)
+      setLiveDns(cached.liveDns ?? null)
+      setError(cached.error ?? null)
+    })()
+    return () => { cancelled = true }
   }, [])
 
   const runLookup = useCallback(async () => {
@@ -191,14 +195,14 @@ export default function DnsLookup() {
     try {
       const result = await fetchLiveDnsRecords(target, controller.signal)
       setLiveDns(result)
-      saveToolCache(TOOL_CACHE_KEYS.DNS_LOOKUP, { inputValue: target, domain: target, liveDns: result, error: null })
+      await saveToolCache(TOOL_CACHE_KEYS.DNS_LOOKUP, { inputValue: target, domain: target, liveDns: result, error: null })
     } catch (err) {
       if (err.name === 'AbortError') return
       const message = err.message ?? 'DNS lookup failed.'
       setError(message)
       // A failed query is still a terminal state — overwrite the cache so a
       // tool switch and back shows this failure, not the previous success.
-      saveToolCache(TOOL_CACHE_KEYS.DNS_LOOKUP, { inputValue: target, domain: target, liveDns: null, error: message })
+      await saveToolCache(TOOL_CACHE_KEYS.DNS_LOOKUP, { inputValue: target, domain: target, liveDns: null, error: message })
     } finally {
       setLoading(false)
     }

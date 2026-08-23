@@ -37,11 +37,12 @@ export default function Settings() {
   const [clearing, setClearing] = useState(false)
   const [justCleared, setJustCleared] = useState(false)
 
-  const handleConfirmClear = () => {
+  const handleConfirmClear = async () => {
     setClearing(true)
-    // Only ever touches keys under the tool-cache prefix — rivo-theme lives
-    // under a separate key entirely and is never read or removed here.
-    clearAllToolCaches()
+    // Only ever touches the IndexedDB tool-cache store — rivo-theme lives in
+    // localStorage under a completely separate key and is never read or
+    // removed here.
+    await clearAllToolCaches()
     setClearing(false)
     setConfirmOpen(false)
     setJustCleared(true)

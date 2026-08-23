@@ -545,14 +545,18 @@ export default function WhoisLookup() {
   // whatever the last *terminal* state was — success, an unsupported TLD,
   // or an error — never a stale success left over from an earlier query.
   useEffect(() => {
-    const cached = loadToolCache(TOOL_CACHE_KEYS.WHOIS_LOOKUP)
-    if (!cached) return
-    if (cached.inputValue) setInputValue(cached.inputValue)
-    if (cached.queryInput) setQueryInput(cached.queryInput)
-    setRdapData(cached.rdapData ?? null)
-    setQueryType(cached.queryType ?? null)
-    setUnsupportedTld(cached.unsupportedTld ?? null)
-    setError(cached.error ?? null)
+    let cancelled = false
+    ;(async () => {
+      const cached = await loadToolCache(TOOL_CACHE_KEYS.WHOIS_LOOKUP)
+      if (cancelled || !cached) return
+      if (cached.inputValue) setInputValue(cached.inputValue)
+      if (cached.queryInput) setQueryInput(cached.queryInput)
+      setRdapData(cached.rdapData ?? null)
+      setQueryType(cached.queryType ?? null)
+      setUnsupportedTld(cached.unsupportedTld ?? null)
+      setError(cached.error ?? null)
+    })()
+    return () => { cancelled = true }
   }, [])
 
   const runLookup = useCallback(async () => {
@@ -589,7 +593,7 @@ export default function WhoisLookup() {
       if (NO_RDAP_TLDS.has(tld)) {
         const unsupported = { tld, link: TLD_WHOIS_LINKS[tld] || null }
         setUnsupportedTld(unsupported)
-        saveToolCache(TOOL_CACHE_KEYS.WHOIS_LOOKUP, {
+        await saveToolCache(TOOL_CACHE_KEYS.WHOIS_LOOKUP, {
           inputValue: target, queryInput: target, rdapData: null, queryType: null, unsupportedTld: unsupported, error: null,
         })
         return
@@ -604,7 +608,7 @@ export default function WhoisLookup() {
       const result = await fetchRdap(target, controller.signal)
       setRdapData(result.data)
       setQueryType(result.type)
-      saveToolCache(TOOL_CACHE_KEYS.WHOIS_LOOKUP, {
+      await saveToolCache(TOOL_CACHE_KEYS.WHOIS_LOOKUP, {
         inputValue: target, queryInput: target, rdapData: result.data, queryType: result.type, unsupportedTld: null, error: null,
       })
     } catch (err) {
@@ -613,7 +617,7 @@ export default function WhoisLookup() {
       setError(message)
       // A failed query is still a terminal state — overwrite the cache so a
       // tool switch and back shows this failure, not the previous success.
-      saveToolCache(TOOL_CACHE_KEYS.WHOIS_LOOKUP, {
+      await saveToolCache(TOOL_CACHE_KEYS.WHOIS_LOOKUP, {
         inputValue: target, queryInput: target, rdapData: null, queryType: null, unsupportedTld: null, error: message,
       })
     } finally {
