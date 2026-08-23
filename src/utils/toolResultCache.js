@@ -39,6 +39,8 @@ const LEGACY_STORAGE_PREFIX = 'rivo:toolCache:'
 export const TOOL_CACHE_KEYS = {
   WHOIS_LOOKUP: 'whoisLookup',
   DNS_LOOKUP: 'dnsLookup',
+  FRAMEWORK_DETECTOR: 'frameworkDetector',
+  PAGESPEED_INSIGHTS: 'pageSpeedInsights',
 }
 
 let dbPromise = null

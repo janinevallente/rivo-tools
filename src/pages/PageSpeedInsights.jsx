@@ -1,8 +1,9 @@
-import { useState, useCallback, useMemo, useRef } from 'react'
+import { useState, useCallback, useMemo, useRef, useEffect } from 'react'
 import { Helmet } from 'react-helmet-async'
 import { SyncLoader } from 'react-spinners'
 import PageHeader from '../components/ui/PageHeader'
 import { getRequest } from '../api/apiClient'
+import { TOOL_CACHE_KEYS, saveToolCache, loadToolCache } from '../utils/toolResultCache'
 import {
   CATEGORY_IDS,
   CATEGORY_LABELS,
@@ -395,8 +396,33 @@ export default function PageSpeedInsights() {
   const [activeTab, setActiveTab] = useState('performance')
   const abortRef = useRef(null)
 
+  // Restore the last analysis on mount, so switching over to another tool
+  // and back doesn't force a re-run.
+  // This mirrors whatever the last *terminal* state was — success or an
+  // error — never a stale success left over from an earlier run.
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      const cached = await loadToolCache(TOOL_CACHE_KEYS.PAGESPEED_INSIGHTS)
+      if (cancelled || !cached) return
+      if (cached.inputValue) setInputValue(cached.inputValue)
+      if (cached.strategy) setStrategy(cached.strategy)
+      if (cached.activeTab) setActiveTab(cached.activeTab)
+      setResult(cached.result ?? null)
+      setError(cached.error ?? null)
+    })()
+    return () => { cancelled = true }
+  }, [])
+
   const runAnalysis = useCallback(async () => {
     const target = normaliseUrl(inputValue)
+
+    // Clear any previous result up front, before validation — otherwise a
+    // failed re-query (empty input, missing API key, or a real PSI failure)
+    // leaves the last successful analysis rendered underneath the error
+    // banner instead of replacing it.
+    setResult(null)
+
     if (!target) {
       setError('Please enter a URL to analyze.')
       return
@@ -412,15 +438,23 @@ export default function PageSpeedInsights() {
 
     setLoading(true)
     setError(null)
-    setResult(null)
     setActiveTab('performance')
 
     try {
       const data = await runPageSpeed(target, strategy, PAGESPEED_API_KEY, controller.signal)
       setResult(data)
+      await saveToolCache(TOOL_CACHE_KEYS.PAGESPEED_INSIGHTS, {
+        inputValue: target, strategy, result: data, activeTab: 'performance', error: null,
+      })
     } catch (err) {
       if (err.name === 'AbortError') return
-      setError(err.message || 'PageSpeed analysis failed.')
+      const message = err.message || 'PageSpeed analysis failed.'
+      setError(message)
+      // A failed run is still a terminal state — overwrite the cache so a
+      // tool switch and back shows this failure, not the previous success.
+      await saveToolCache(TOOL_CACHE_KEYS.PAGESPEED_INSIGHTS, {
+        inputValue: target, strategy, result: null, activeTab: 'performance', error: message,
+      })
     } finally {
       setLoading(false)
     }
@@ -547,7 +581,7 @@ export default function PageSpeedInsights() {
       )}
 
       {/* Results */}
-      {lh && !loading && (
+      {lh && !loading && !error && (
         <div className="flex flex-col gap-5">
           {/* Summary bar */}
           <div className="bg-backgroundCard border border-borderColor rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center gap-4">

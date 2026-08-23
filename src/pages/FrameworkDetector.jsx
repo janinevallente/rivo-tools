@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import { Helmet } from 'react-helmet-async'
 import {
   Cpu,
@@ -20,6 +20,7 @@ import PageHeader from '../components/ui/PageHeader'
 import { getRequest } from '../api/apiClient'
 import { buildPsiUrl, PAGESPEED_API_KEY, getStackPacks } from '../utils/pageSpeedUtils'
 import { frameworkSignatures, maxDnsScore, scorePsi } from '../data/frameworkSignatures'
+import { TOOL_CACHE_KEYS, saveToolCache, loadToolCache } from '../utils/toolResultCache'
 
 const DOH_URL = 'https://cloudflare-dns.com/dns-query'
 
@@ -277,6 +278,23 @@ export default function FrameworkDetector() {
   const [error, setError] = useState(null)
   const abortRef = useRef(null)
 
+  // Restore the last analysis on mount, so switching over to another tool
+  // and back doesn't force a re-run.
+  // This mirrors whatever the last *terminal* state was — success or an
+  // error — never a stale success left over from an earlier run.
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      const cached = await loadToolCache(TOOL_CACHE_KEYS.FRAMEWORK_DETECTOR)
+      if (cancelled || !cached) return
+      if (cached.inputValue) setInputValue(cached.inputValue)
+      if (cached.queryHost) setQueryHost(cached.queryHost)
+      setResults(cached.results ?? null)
+      setError(cached.error ?? null)
+    })()
+    return () => { cancelled = true }
+  }, [])
+
   const run = useCallback(async () => {
     const hostname = normaliseHostname(inputValue)
 
@@ -313,10 +331,20 @@ export default function FrameworkDetector() {
       }
 
       const psiSignals = psiData ? extractPsiSignals(psiData) : null
-      setResults(mergeResults(dnsSignals, psiSignals, hostname))
+      const merged = mergeResults(dnsSignals, psiSignals, hostname)
+      setResults(merged)
+      await saveToolCache(TOOL_CACHE_KEYS.FRAMEWORK_DETECTOR, {
+        inputValue: hostname, queryHost: hostname, results: merged, error: null,
+      })
     } catch (err) {
       if (err.name === 'AbortError' || err.name === 'CanceledError') return
-      setError(err.message || 'Detection failed.')
+      const message = err.message || 'Detection failed.'
+      setError(message)
+      // A failed query is still a terminal state — overwrite the cache so a
+      // tool switch and back shows this failure, not the previous success.
+      await saveToolCache(TOOL_CACHE_KEYS.FRAMEWORK_DETECTOR, {
+        inputValue: hostname, queryHost: hostname, results: null, error: message,
+      })
     } finally {
       setLoading(false)
       setPhase('')
