@@ -1,10 +1,15 @@
 import { useState } from 'react'
 import { Helmet } from 'react-helmet-async'
-import { Modal, Switch } from 'antd'
-import { Sun, Moon, Trash2, CheckCircle2 } from 'lucide-react'
+import { Modal, Switch, Checkbox } from 'antd'
+import { Sun, Moon, Trash2, CheckCircle2, Loader2, Inbox } from 'lucide-react'
 import PageHeader from '../components/ui/PageHeader'
 import { useTheme } from '../components/themes/ThemeContext'
-import { clearAllToolCaches } from '../utils/toolResultCache'
+import {
+  TOOL_CACHE_LABELS,
+  getCachedToolDetails,
+  clearToolCaches,
+  formatBytes,
+} from '../utils/toolResultCache'
 
 function SettingRow({ title, description, children }) {
   return (
@@ -33,21 +38,57 @@ function SettingsSection({ title, children }) {
 
 export default function Settings() {
   const { themeMode, toggleTheme } = useTheme()
+
   const [confirmOpen, setConfirmOpen] = useState(false)
+  const [listLoading, setListLoading] = useState(false)
+  const [cachedItems, setCachedItems] = useState([])     // [{ id: 'whoisLookup', bytes: 1420 }, ...]
+  const [selectedIds, setSelectedIds] = useState([])     // ids selected for deletion
   const [clearing, setClearing] = useState(false)
   const [justCleared, setJustCleared] = useState(false)
 
-  const handleConfirmClear = async () => {
+  const openClearModal = async () => {
+    setConfirmOpen(true)
+    setListLoading(true)
+    const items = await getCachedToolDetails()
+    setCachedItems(items)
+    setSelectedIds(items.map(item => item.id)) // select all by default
+    setListLoading(false)
+  }
+
+  const closeClearModal = () => {
+    if (clearing) return
+    setConfirmOpen(false)
+    setCachedItems([])
+    setSelectedIds([])
+  }
+
+  const toggleOne = (id, checked) => {
+    setSelectedIds(prev => (checked ? [...prev, id] : prev.filter(x => x !== id)))
+  }
+
+  const toggleAll = (checked) => {
+    setSelectedIds(checked ? cachedItems.map(item => item.id) : [])
+  }
+
+  const handleDelete = async () => {
+    if (selectedIds.length === 0) return
     setClearing(true)
-    // Only ever touches the IndexedDB tool-cache store — rivo-theme lives in
-    // localStorage under a completely separate key and is never read or
-    // removed here.
-    await clearAllToolCaches()
+    await clearToolCaches(selectedIds)
     setClearing(false)
     setConfirmOpen(false)
+    setCachedItems([])
+    setSelectedIds([])
     setJustCleared(true)
     setTimeout(() => setJustCleared(false), 3000)
   }
+
+  // Calculate total byte size of selected items
+  const selectedSize = cachedItems
+    .filter(item => selectedIds.includes(item.id))
+    .reduce((sum, item) => sum + item.bytes, 0)
+
+  const totalSize = cachedItems.reduce((sum, item) => sum + item.bytes, 0)
+  const allSelected = selectedIds.length === cachedItems.length && cachedItems.length > 0
 
   return (
     <div className="mx-auto px-5 md:px-10 py-8 font-poppins">
@@ -80,7 +121,7 @@ export default function Settings() {
       <SettingsSection title="Data & Storage">
         <SettingRow
           title="Clear Tool Cache"
-          description="Tools that saved your last query result in this browser so switching between them doesn't force a re-query. This clears all of that. Your theme preference is not affected."
+          description="Tools that saved your last query result in this browser so switching between them doesn't force a re-query. Pick which tools to clear below. Your theme preference is not affected."
         >
           {justCleared ? (
             <span className="inline-flex items-center justify-center sm:justify-start gap-1.5 text-xs font-medium text-green-400 w-full sm:w-auto">
@@ -89,31 +130,87 @@ export default function Settings() {
             </span>
           ) : (
             <button
-              onClick={() => setConfirmOpen(true)}
+              onClick={openClearModal}
               className="flex items-center justify-center sm:justify-start gap-2 px-3.5 py-2 rounded-lg text-xs font-medium bg-red-500/10 text-red-400 border border-red-400/30 cursor-pointer hover:bg-red-500/20 transition-colors w-full sm:w-auto"
             >
               <Trash2 size={13} />
-              Clear Tool Cache
+              Clear
             </button>
           )}
         </SettingRow>
       </SettingsSection>
 
       <Modal
-        title="Are you sure to clear tool cache?"
+        title={
+          <div className="flex items-center justify-between pr-6">
+            <span className="text-base font-semibold text-textHeader">Clear Tool Cache</span>
+            {!listLoading && cachedItems.length > 0 && (
+              <span className="text-xs font-normal text-text bg-accentBg px-2.5 py-1 rounded-full border border-accentBorder">
+                Total: {formatBytes(totalSize)}
+              </span>
+            )}
+          </div>
+        }
         open={confirmOpen}
-        onCancel={() => setConfirmOpen(false)}
-        onOk={handleConfirmClear}
-        okText="Clear Cache"
+        onCancel={closeClearModal}
+        closable={!clearing}
+        maskClosable={!clearing}
+        keyboard={!clearing}
+        cancelButtonProps={{ disabled: clearing }}
+        onOk={handleDelete}
+        okText={selectedIds.length > 0 ? `Delete (${formatBytes(selectedSize)})` : 'Delete'}
         cancelText="Cancel"
-        okButtonProps={{ danger: true, loading: clearing }}
+        okButtonProps={{
+          danger: true,
+          loading: clearing,
+          disabled: listLoading || selectedIds.length === 0,
+        }}
         centered
-        width={440}
+        width={460}
       >
-        <p className="text-sm text-text m-0">
-          This removes every tool's saved result from this browser, so the next time you open them you'll need to run the query again.
-          This does not affect your light/dark theme preference.
-        </p>
+        {listLoading ? (
+          <div className="flex items-center justify-center gap-2 py-8 text-sm text-text">
+            <Loader2 size={16} className="animate-spin" />
+            Calculating stored data…
+          </div>
+        ) : cachedItems.length === 0 ? (
+          <div className="flex flex-col items-center justify-center gap-2 py-8 text-center">
+            <Inbox size={24} className="text-text" />
+            <p className="text-sm text-text m-0">No tools have cached results right now.</p>
+          </div>
+        ) : (
+          <div className="flex flex-col pt-2">
+            <div className="flex items-center justify-between mb-3 pb-2 border-b border-borderColor">
+              <span className="text-xs text-text">Select tool(s) to clear cache:</span>
+              <button
+                type="button"
+                onClick={() => toggleAll(!allSelected)}
+                className="text-xs text-accent bg-transparent border-none p-0 cursor-pointer hover:underline"
+              >
+                {allSelected ? 'Deselect All' : 'Select All'}
+              </button>
+            </div>
+
+            <div className="flex flex-col max-h-64 overflow-y-auto scrollbar-hide">
+              {cachedItems.map(({ id, bytes }) => (
+                <label key={id} className="flex items-center justify-between py-2.5 cursor-pointer hover:bg-accentBg/30 px-1 transition-colors">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <Checkbox
+                      checked={selectedIds.includes(id)}
+                      onChange={e => toggleOne(id, e.target.checked)}
+                    />
+                    <span className="text-sm text-textHeader font-medium truncate">
+                      {TOOL_CACHE_LABELS[id] ?? id}
+                    </span>
+                  </div>
+                  <span className="text-xs text-text font-mono shrink-0 ml-3">
+                    {formatBytes(bytes)}
+                  </span>
+                </label>
+              ))}
+            </div>
+          </div>
+        )}
       </Modal>
     </div>
   )

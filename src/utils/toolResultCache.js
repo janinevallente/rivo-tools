@@ -43,6 +43,13 @@ export const TOOL_CACHE_KEYS = {
   PAGESPEED_INSIGHTS: 'pageSpeedInsights',
 }
 
+export const TOOL_CACHE_LABELS = {
+  [TOOL_CACHE_KEYS.WHOIS_LOOKUP]: 'WHOIS Lookup',
+  [TOOL_CACHE_KEYS.DNS_LOOKUP]: 'DNS Lookup',
+  [TOOL_CACHE_KEYS.FRAMEWORK_DETECTOR]: 'Framework Detector',
+  [TOOL_CACHE_KEYS.PAGESPEED_INSIGHTS]: 'PageSpeed Insights',
+}
+
 let dbPromise = null
 
 // Opens (and caches) the single shared IndexedDB connection used by this
@@ -105,6 +112,25 @@ function migrateLegacyEntry(toolId) {
   }
 }
 
+// Utility to convert raw byte count to readable string (e.g. 1.2 KB, 450 B)
+export function formatBytes(bytes) {
+  if (!bytes || bytes === 0) return '0 B'
+  const k = 1024
+  const sizes = ['B', 'KB', 'MB', 'GB']
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`
+}
+
+// Estimates byte size of an object in IndexedDB by serializing to JSON
+function estimateRecordSize(record) {
+  try {
+    const str = JSON.stringify(record)
+    return new TextEncoder().encode(str).length
+  } catch {
+    return 0
+  }
+}
+
 // Persists `data` (any structured-cloneable shape) as the last result for
 // `toolId`. Silently no-ops on failure (IndexedDB unavailable, private
 // browsing restrictions, quota exceeded, etc.) — caching is a convenience
@@ -114,7 +140,7 @@ export async function saveToolCache(toolId, data) {
     const record = { toolId, v: CACHE_VERSION, savedAt: Date.now(), data }
     await withStore('readwrite', store => store.put(record))
   } catch {
-    // ignore — see comment above
+    // ignore
   }
 }
 
@@ -144,6 +170,51 @@ export async function clearToolCache(toolId) {
     await withStore('readwrite', store => store.delete(toolId))
   } catch {
     // ignore
+  }
+}
+
+export async function listCachedToolIds() {
+  try {
+    const keys = await withStore('readonly', store => store.getAllKeys())
+    return keys || []
+  } catch {
+    return []
+  }
+}
+
+/**
+ * Returns an array of cached entries with their estimated byte sizes:
+ * [{ id: 'whoisLookup', bytes: 1420 }, ...]
+ */
+export async function getCachedToolDetails() {
+  try {
+    const records = await withStore('readonly', store => store.getAll())
+    if (!records) return []
+
+    return records.map(record => ({
+      id: record.toolId,
+      bytes: estimateRecordSize(record),
+    }))
+  } catch {
+    return []
+  }
+}
+
+// Clears the cached result for a specific set of tool ids in a single
+// transaction (used when a person picks a subset of tools to clear rather
+// than everything). Silently no-ops for ids that don't have an entry.
+// Returns true on success, false if the operation failed outright.
+export async function clearToolCaches(toolIds) {
+  if (!toolIds || toolIds.length === 0) return true
+  try {
+    await withStore('readwrite', store => {
+      let lastRequest = null
+      toolIds.forEach(id => { lastRequest = store.delete(id) })
+      return lastRequest
+    })
+    return true
+  } catch {
+    return false
   }
 }
 
