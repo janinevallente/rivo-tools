@@ -212,7 +212,7 @@ This project is deployed on [Netlify](https://netlify.com). To deploy your own f
 1. Push the repository to GitHub
 2. Import the project on [netlify.com](https://netlify.com)
 3. Netlify auto-detects Vite — build command `npm run build`, publish directory `dist`
-4. Add `VITE_PAGESPEED_API` and `VITE_PAGESPEED_API_KEY` under Site settings → Environment variables if you want the PageSpeed/Framework Detector tools enabled
+4. Add `VITE_PAGESPEED_API_KEY` under Site settings → Environment variables if you want the PageSpeed/Framework Detector tools enabled
 5. Every push to `main` triggers a new deployment automatically
 
 ---
