@@ -7,4 +7,12 @@ export default defineConfig({
   define: {
     __APP_VERSION__: JSON.stringify(process.env.npm_package_version),
   },
+  build: {
+    // Skips gzip-size calc for every chunk — saves build time, doesn't affect output.
+    reportCompressedSize: false,
+  },
+  optimizeDeps: {
+    // Keep the WASM-heavy deps out of esbuild's pre-bundling step.
+    exclude: ['onnxruntime-web', '@imgly/background-removal'],
+  },
 })
