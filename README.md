@@ -12,11 +12,13 @@ A growing collection of fast, privacy-first tech utilities that run entirely in 
 - **On-device ML background removal** — client-side image segmentation via ONNX Runtime Web, no image ever uploaded anywhere
 - **DNS-over-HTTPS lookups** — queries Cloudflare's public DoH resolver directly for A, AAAA, CNAME, MX, NS, TXT, SOA, PTR, SRV, CAA, DS, and DNSKEY records
 - **RDAP-based WHOIS** — domain and IP registration lookups via RDAP, rendered as a full plain-text dump, with registry-specific extensions surfaced for `.sg` (Verified ID status) and `.au` (auDA eligibility/status reason data), and a direct link to the registry's own WHOIS page for ccTLDs RDAP doesn't cover
-- **Cross-tool result caching** — DNS Lookup and WHOIS Lookup persist their last query's result to `localStorage`, so switching between them (or reloading) restores what you were looking at instead of forcing a re-query
+- **Cross-tool result caching (IndexedDB)** — DNS Lookup, WHOIS Lookup, Framework Detector, and PageSpeed Insights persist their last query's result in IndexedDB, so switching between tools (or reloading) restores what you were looking at instead of forcing a re-query. Manageable per-tool from Settings.
 - **Lighthouse-powered auditing** — PageSpeed Insights and Framework Detector both run real Lighthouse audits against a target URL for accurate, JS-aware results
 - **Interactive color tools** — color wheel with harmony exploration, palette extraction from images, WCAG contrast auto-fixing, and conversion across HEX/RGB/HSL/LAB/LCH/OKLAB/OKLCH
 - **Tailwind CSS toolset** — bidirectional Tailwind ⇄ CSS conversion, visual grid/flexbox/shadow builders, and a searchable utility class cheat sheet
 - **Cryptographic utilities** — `window.crypto`-based password generation, MD5/SHA/RIPEMD hashing, and AES/DES/RC4/Rabbit symmetric encryption
+- **Dedicated Settings page** — theme toggle and a browser-style "Clear Tool Cache" dialog: pick exactly which tools' cached results to remove, with each one's estimated storage size shown
+- **Transparent data privacy policy** — accessible from the home page footer, explaining exactly what's processed on-device, what's fetched from external APIs, and what's stored locally
 - **Dark/light theme** — persisted per-device, defaults to dark unless the OS explicitly prefers light
 - **Responsive design** — works on mobile, tablet, and desktop
 
@@ -33,6 +35,7 @@ A growing collection of fast, privacy-first tech utilities that run entirely in 
 | Maps            | [Leaflet](https://leafletjs.com) / [React Leaflet](https://react-leaflet.js.org)                                           |
 | ML (in-browser) | [ONNX Runtime Web](https://onnxruntime.ai) via [@imgly/background-removal](https://github.com/imgly/background-removal-js) |
 | Crypto          | [crypto-js](https://github.com/brix/crypto-js), Web Crypto API                                                             |
+| Local storage   | IndexedDB (per-tool result cache), `localStorage` (theme preference only)                                                  |
 | HTTP            | [Axios](https://axios-http.com)                                                                                            |
 | Utilities       | [JSZip](https://stuk.github.io/jszip/)                                                                                     |
 | Fonts           | Poppins via Google Fonts                                                                                                   |
@@ -53,7 +56,7 @@ src/
 │   │   └── AntThemeProvider.jsx      # Wires the theme into Ant Design's token system
 │   └── ui/
 │       ├── PageHeader.jsx            # Shared page title/description header
-│       ├── Sidebar.jsx               # Collapsible nav grouped by tool category
+│       ├── Sidebar.jsx               # Collapsible nav grouped by tool category, + Settings entry
 │       └── IpLookupMap.jsx           # Leaflet map used by the IP Lookup tool
 ├── data/
 │   ├── toolsData.js                  # Tool catalog — id, icon, label, description
@@ -63,8 +66,8 @@ src/
 │   ├── colorUtils.js                 # Color space conversions (HEX/RGB/HSL/LAB/OKLCH...)
 │   ├── passwordUtils.js              # Cryptographically random password generation
 │   ├── pageSpeedUtils.js             # PageSpeed Insights request building + response parsing
-│   └── toolResultCache.js            # Generic localStorage cache so tools can restore their last result across navigation
-└── pages/                            # One component per tool (see Available Tools below)
+│   └── toolResultCache.js            # IndexedDB-backed cache so tools can restore their last result across navigation
+└── pages/                            # One component per tool (see Available Tools below), plus Home.jsx and Settings.jsx
 ```
 
 ---
@@ -153,18 +156,18 @@ npm run preview
 
 ### Network
 
-| Tool              | Description                                                                                                                                                                                                                                                                                       |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| IP Address Lookup | Your public IP, ISP, and geolocation, with an interactive map.                                                                                                                                                                                                                                    |
-| DNS Lookup        | Queries A, AAAA, CNAME, MX, NS, TXT, SOA, PTR, SRV, CAA, DS, and DNSKEY records via DNS-over-HTTPS. Last result persists across tool switches.                                                                                                                                                    |
-| WHOIS Lookup      | Domain/IP registration data via RDAP, rendered as a full plain-text dump. Surfaces `.sg` Verified ID status and `.au` auDA eligibility/status-reason fields where present, and links to the registry's own WHOIS page for ccTLDs without RDAP support. Last result persists across tool switches. |
+| Tool              | Description                                                                                                                                                                                                                                                                                                               |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| IP Address Lookup | Your public IP, ISP, and geolocation, with an interactive map.                                                                                                                                                                                                                                                            |
+| DNS Lookup        | Queries A, AAAA, CNAME, MX, NS, TXT, SOA, PTR, SRV, CAA, DS, and DNSKEY records via DNS-over-HTTPS. Last result cached in IndexedDB and persists across tool switches.                                                                                                                                                    |
+| WHOIS Lookup      | Domain/IP registration data via RDAP, rendered as a full plain-text dump. Surfaces `.sg` Verified ID status and `.au` auDA eligibility/status-reason fields where present, and links to the registry's own WHOIS page for ccTLDs without RDAP support. Last result cached in IndexedDB and persists across tool switches. |
 
 ### Web & Performance
 
-| Tool               | Description                                                                                                                                                             |
-| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| PageSpeed Insights | Full Lighthouse + CrUX audit — performance, accessibility, best practices, SEO.                                                                                         |
-| Framework Detector | Identifies the hosting platform, frontend framework, and deployment stack behind any site via DNS and asset fingerprinting, plus Lighthouse's own stack-pack detection. |
+| Tool               | Description                                                                                                                                                                                                                                |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| PageSpeed Insights | Full Lighthouse + CrUX audit — performance, accessibility, best practices, SEO. Last analysis cached in IndexedDB and persists across tool switches.                                                                                       |
+| Framework Detector | Identifies the hosting platform, frontend framework, and deployment stack behind any site via DNS and asset fingerprinting, plus Lighthouse's own stack-pack detection. Last result cached in IndexedDB and persists across tool switches. |
 
 ### Security
 
@@ -182,6 +185,20 @@ npm run preview
 
 ---
 
+## Settings
+
+Accessible from the sidebar (desktop) or the top bar / expanded menu (mobile) — replaces what used to be a standalone Light/Dark toggle in the sidebar.
+
+- **Appearance** — toggle between light and dark theme. Stored under the `rivo-theme` `localStorage` key, completely separate from tool result caching.
+- **Data & Storage → Clear Tool Cache** — opens a dialog modeled on a browser's "Clear browsing data" flow:
+  1. Only tools that currently have a cached result are listed (fetched live from IndexedDB when the dialog opens).
+  2. Each tool shows its estimated cache size; everything is checked by default.
+  3. Clicking **Delete** clears only the selected tools' entries and waits for the operation to finish before closing the dialog.
+
+This never touches the theme preference — clearing tool cache and toggling theme are fully independent, on separate storage mechanisms (IndexedDB vs. `localStorage`).
+
+---
+
 ## Adding a New Tool
 
 Every tool is registered in three places:
@@ -194,14 +211,27 @@ The tool itself lives in `src/pages/YourTool.jsx` as a self-contained component 
 
 ### Persisting a Tool's Results
 
-If a tool's result should survive the user navigating to another tool and back (like DNS Lookup and WHOIS Lookup do), wire it up to `src/utils/toolResultCache.js`:
+If a tool's result should survive the user navigating to another tool and back (like DNS Lookup, WHOIS Lookup, Framework Detector, and PageSpeed Insights do), wire it up to `src/utils/toolResultCache.js`. It's backed by IndexedDB rather than `localStorage`, since localStorage's shared ~5-10MB origin quota is too easy to blow through once a few large tool results (a full RDAP dump, a Lighthouse report, etc.) stack up — every function below is `async` as a result.
 
-1. Add a unique id for the tool to `TOOL_CACHE_KEYS`.
-2. After a successful query, call `saveToolCache(TOOL_CACHE_KEYS.YOUR_TOOL, { ...whatever state should be restored })`. Treat failures as a result too — call `saveToolCache` in the error path as well (with the data fields nulled out and an `error` message included) so a tool switch and back reflects the last _outcome_, not a stale success.
-3. In a `useEffect` on mount, call `loadToolCache(TOOL_CACHE_KEYS.YOUR_TOOL)` and, if it returns non-null, use it to hydrate initial state.
-4. Optionally call `clearToolCache(TOOL_CACHE_KEYS.YOUR_TOOL)` if the tool has a "clear results" action.
+1. Add a unique id to `TOOL_CACHE_KEYS`, and a matching human-readable name in `TOOL_CACHE_LABELS` (shown in the Settings "Clear Tool Cache" dialog).
+2. After a successful query: `await saveToolCache(TOOL_CACHE_KEYS.YOUR_TOOL, { ...whatever state should be restored })`. Treat failures as a result too — call `saveToolCache` in the error path as well (with the data fields nulled out and an `error` message included) so a tool switch and back reflects the last _outcome_, not a stale success.
+3. On mount, inside a `useEffect` (with an async helper function since the effect callback itself can't be `async`): `await loadToolCache(TOOL_CACHE_KEYS.YOUR_TOOL)` once and, if it returns non-null, use it to hydrate initial state.
+4. Optionally: `await clearToolCache(TOOL_CACHE_KEYS.YOUR_TOOL)` if the tool has its own "clear results" action.
 
-Cached data is versioned internally, so a shape change to what you save won't break on old cached entries — they're just ignored. Everything is wrapped in try/catch and no-ops on failure (private browsing, storage quota, etc.), so it's safe to add without extra error handling on the caller's side.
+Other exports worth knowing about: `listCachedToolIds()` / `listCachedToolsWithSize()` (used by the Settings dialog to show only tools with actual cached data, plus an estimated byte size for each), and `clearToolCaches(toolIds)` / `clearAllToolCaches()` for batch/full clears.
+
+Cached data is versioned internally, so a shape change to what you save won't break on old cached entries — they're just ignored. A one-time migration also runs automatically the first time a tool's cache is loaded, pulling in anything left over from before this moved off `localStorage`. Everything is wrapped in try/catch and no-ops on failure (private browsing, storage quota, IndexedDB unavailable, etc.), so it's safe to add without extra error handling on the caller's side.
+
+---
+
+## Build Notes
+
+`vite.config.js` includes two build-time tweaks:
+
+- `build.reportCompressedSize: false` — skips gzip-size calculation for every output chunk. With ~25+ lazily-loaded tool pages producing a lot of chunks, this measurably speeds up `npm run build` without touching the actual output.
+- `optimizeDeps.exclude: ['onnxruntime-web', '@imgly/background-removal']` — keeps these WASM-heavy dependencies out of esbuild's dev-server pre-bundling step.
+
+**Known upstream limitation:** `dist/assets` will contain a large (~24MB) `onnxruntime-web` `.wasm` file even though Background Remover's actual AI models are fetched from imgly's CDN at runtime, not bundled locally. This is a [currently-open onnxruntime-web/bundler issue](https://github.com/microsoft/onnxruntime/issues/24009) — the library references its WASM binary via a static `import.meta.url` pattern internally, which Vite (and every other major bundler) discovers and bundles regardless of runtime config. Because Background Remover is lazy-loaded, this shouldn't affect load time for any other tool; whether it's actually fetched by a user's browser depends on which onnxruntime-web execution backend (WASM vs. WebGPU) their session ends up using.
 
 ---
 
@@ -214,6 +244,12 @@ This project is deployed on [Netlify](https://netlify.com). To deploy your own f
 3. Netlify auto-detects Vite — build command `npm run build`, publish directory `dist`
 4. Add `VITE_PAGESPEED_API_KEY` under Site settings → Environment variables if you want the PageSpeed/Framework Detector tools enabled
 5. Every push to `main` triggers a new deployment automatically
+
+---
+
+## Privacy
+
+The home page footer links to an in-app **Data Privacy Policy** covering what runs on-device, what's fetched directly from external APIs (DNS, WHOIS, IP, PageSpeed), and what's stored locally (theme preference + per-tool result cache, both clearable from Settings). No accounts, no analytics, no tracking.
 
 ---
 
