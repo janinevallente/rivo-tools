@@ -292,7 +292,11 @@ function LifecycleDataTable({ result }) {
               <td className="px-5 py-3 text-textHeader">{domain}</td>
             </tr>
             <tr className="border-b border-borderColor">
-              <td className="px-5 py-3 text-xs text-text font-medium">CURRENT STATUS</td>
+              <td className="px-5 py-3 text-xs text-text font-medium">EXPIRY DATE</td>
+              <td className="px-5 py-3 text-textHeader">{expiryFormatted}</td>
+            </tr>
+            <tr className="border-b border-borderColor">
+              <td className="px-5 py-3 text-xs text-text font-medium">CURRENT LIFECYCLE PERIOD</td>
               <td className="px-5 py-3">
                 <span 
                   className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${statusStyle.bg} ${statusStyle.color} ${statusStyle.border}`}
@@ -301,10 +305,6 @@ function LifecycleDataTable({ result }) {
                   {status}
                 </span>
               </td>
-            </tr>
-            <tr className="border-b border-borderColor">
-              <td className="px-5 py-3 text-xs text-text font-medium">EXPIRY DATE</td>
-              <td className="px-5 py-3 text-textHeader">{expiryFormatted}</td>
             </tr>
             {daysLabel && (
               <tr className="border-b border-borderColor">
