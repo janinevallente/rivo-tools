@@ -67,10 +67,15 @@ const categories = [
       { id: 'tailwind-shadow-generator', label: 'Tailwind Shadow Generator', icon: BoxSelect },
     ],
   },
-{
+  {
     label: 'Network',
     tools: [
       { id: 'ip-lookup', label: 'IP Address Lookup', icon: MapPin },
+    ],
+  },
+  {
+    label: 'Domain Tools',
+    tools: [
       { id: 'dns-lookup', label: 'DNS Lookup', icon: Globe },
       { id: 'whois-lookup', label: 'WHOIS Lookup', icon: ScrollText },
       { id: 'domain-lifecycle-checker', label: 'Domain Lifecycle Checker', icon: CalendarClock },
