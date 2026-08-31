@@ -24,6 +24,7 @@ const TailwindShadowGenerator = lazy(() => import('./pages/TailwindShadowGenerat
 const IpLookup = lazy(() => import('./pages/IpLookup'))
 const DnsLookup = lazy(() => import('./pages/DnsLookup'))
 const WhoisLookup = lazy(() => import('./pages/WhoisLookup'))
+const DomainLifecycleChecker = lazy(() => import('./pages/DomainLifecycleChecker'))
 const PageSpeedInsights = lazy(() => import('./pages/PageSpeedInsights'))
 const FrameworkDetector = lazy(() => import('./pages/FrameworkDetector'))
 const PasswordGenerator = lazy(() => import('./pages/PasswordGenerator'))
@@ -80,6 +81,7 @@ function App() {
       case 'ip-lookup': return <IpLookup />
       case 'dns-lookup': return <DnsLookup />
       case 'whois-lookup': return <WhoisLookup />
+      case 'domain-lifecycle-checker': return <DomainLifecycleChecker />
       case 'password-generator': return <PasswordGenerator />
       case 'pagespeed-insights': return <PageSpeedInsights />
       case 'framework-detector': return <FrameworkDetector />

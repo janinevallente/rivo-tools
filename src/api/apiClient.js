@@ -49,3 +49,53 @@ export const getRdapRequest = async (url, params = {}, config = {}) => {
     }
   }
 }
+
+// Dedicated WHOIS/RDAP GET request helper (who-dat.as93.net) — free, no API key,
+// no CORS issues. Queries RDAP first and falls back to WHOIS server-side, so it
+// covers far more TLDs than calling RDAP directly.
+export const getWhoisRequest = async (url, params = {}, config = {}) => {
+  try {
+    const response = await axios.get(url, {
+      params,
+      headers: {
+        'Accept': 'application/json',
+      },
+      ...config,
+    })
+    return { data: response.data, success: true }
+  } catch (error) {
+    const status = error.response?.status
+    const apiMessage = error.response?.data?.error?.message
+
+    if (status === 501) {
+      return {
+        error,
+        success: false,
+        status: 501,
+        message: apiMessage || 'No RDAP or WHOIS source is available for this TLD.',
+      }
+    }
+    if (status === 400) {
+      return {
+        error,
+        success: false,
+        status: 400,
+        message: apiMessage || 'Invalid or unparseable domain.',
+      }
+    }
+    if (status === 429) {
+      return {
+        error,
+        success: false,
+        status: 429,
+        message: apiMessage || 'Rate limited — please wait a moment and try again.',
+      }
+    }
+    return {
+      error,
+      success: false,
+      status,
+      message: apiMessage || (status ? `WHOIS lookup server returned HTTP ${status}` : 'WHOIS request failed'),
+    }
+  }
+}

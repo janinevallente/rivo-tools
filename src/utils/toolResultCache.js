@@ -41,6 +41,7 @@ export const TOOL_CACHE_KEYS = {
   DNS_LOOKUP: 'dnsLookup',
   FRAMEWORK_DETECTOR: 'frameworkDetector',
   PAGESPEED_INSIGHTS: 'pageSpeedInsights',
+  DOMAIN_LIFECYCLE_CHECKER: 'domainLifecycleChecker',
 }
 
 export const TOOL_CACHE_LABELS = {
@@ -48,6 +49,7 @@ export const TOOL_CACHE_LABELS = {
   [TOOL_CACHE_KEYS.DNS_LOOKUP]: 'DNS Lookup',
   [TOOL_CACHE_KEYS.FRAMEWORK_DETECTOR]: 'Framework Detector',
   [TOOL_CACHE_KEYS.PAGESPEED_INSIGHTS]: 'PageSpeed Insights',
+  [TOOL_CACHE_KEYS.DOMAIN_LIFECYCLE_CHECKER]: 'Domain Lifecycle Checker',
 }
 
 let dbPromise = null

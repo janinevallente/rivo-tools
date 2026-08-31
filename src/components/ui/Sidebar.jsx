@@ -30,8 +30,8 @@ import {
   Settings as SettingsIcon,
   Star,
   Gauge,
-  Fingerprint,
-  Cpu
+  Cpu,
+  CalendarClock
 } from 'lucide-react'
 
 const VERSION = __APP_VERSION__
@@ -73,6 +73,7 @@ const categories = [
       { id: 'ip-lookup', label: 'IP Address Lookup', icon: MapPin },
       { id: 'dns-lookup', label: 'DNS Lookup', icon: Globe },
       { id: 'whois-lookup', label: 'WHOIS Lookup', icon: ScrollText },
+      { id: 'domain-lifecycle-checker', label: 'Domain Lifecycle Checker', icon: CalendarClock },
     ],
   },
   {
