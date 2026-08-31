@@ -289,31 +289,35 @@ function LifecycleDataTable({ result }) {
           <tbody>
             <tr className="border-b border-borderColor">
               <td className="px-5 py-3 text-xs text-text font-medium w-1/3">DOMAIN NAME</td>
-              <td className="px-5 py-3 text-textHeader font-mono">{domain}</td>
-            </tr>
-            <tr className="border-b border-borderColor">
-              <td className="px-5 py-3 text-xs text-text font-medium">EXPIRY DATE</td>
-              <td className="px-5 py-3 text-textHeader font-mono">{expiryFormatted}</td>
+              <td className="px-5 py-3 text-textHeader">{domain}</td>
             </tr>
             <tr className="border-b border-borderColor">
               <td className="px-5 py-3 text-xs text-text font-medium">CURRENT STATUS</td>
               <td className="px-5 py-3">
-                <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${statusStyle.bg} ${statusStyle.color} ${statusStyle.border}`}>
+                <span 
+                  className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${statusStyle.bg} ${statusStyle.color} ${statusStyle.border}`}
+                >
                   <StatusIcon size={13} />
                   {status}
                 </span>
               </td>
             </tr>
+            <tr className="border-b border-borderColor">
+              <td className="px-5 py-3 text-xs text-text font-medium">EXPIRY DATE</td>
+              <td className="px-5 py-3 text-textHeader">{expiryFormatted}</td>
+            </tr>
             {daysLabel && (
               <tr className="border-b border-borderColor">
                 <td className="px-5 py-3 text-xs text-text font-medium">{daysLabel}</td>
-                <td className="px-5 py-3 text-textHeader font-mono font-medium">{daysDisplay}</td>
+                <td className="px-5 py-3 text-textHeader font-medium">{daysDisplay}</td>
               </tr>
             )}
-            <tr>
-              <td className="px-5 py-3 text-xs text-text font-medium">REMARKS</td>
-              <td className="px-5 py-3 text-textHeader text-sm leading-relaxed">{remarks}</td>
-            </tr>
+            {status.toLowerCase() !== 'active' && (
+              <tr>
+                <td className="px-5 py-3 text-xs text-text font-medium">REMARKS</td>
+                <td className="px-5 py-3 text-textHeader text-sm leading-relaxed">{remarks}</td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
@@ -410,9 +414,6 @@ export default function DomainLifecycleChecker() {
   }, [inputValue])
 
   const handleKeyDown = (e) => { if (e.key === 'Enter') runCheck() }
-
-  const statusStyle = result ? (STATUS_STYLES[result.status] ?? STATUS_STYLES['Lifecycle Unknown']) : null
-  const outputText = result ? buildLifecycleText(result) : ''
 
   return (
     <div className="mx-auto px-5 md:px-10 py-8 font-poppins">
