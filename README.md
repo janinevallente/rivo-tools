@@ -6,13 +6,14 @@ A growing collection of fast, privacy-first tech utilities that run entirely in 
 
 ## Features
 
-- **24 tools across 8 categories** — image & asset tools, color utilities, Tailwind CSS helpers, network diagnostics, domain tools, web performance auditing, security utilities, and quick references
+- **25 tools across 8 categories** — image & asset tools, color utilities, Tailwind CSS helpers, network diagnostics, domain tools, web performance auditing, security utilities, and quick references
 - **Privacy-first, local-first** — most tools process everything on-device; nothing you feed them ever leaves your machine
-- **Direct-to-API network tools** — DNS, WHOIS, IP, and PageSpeed Insights lookups talk straight from your browser to the relevant public API, so requests never pass through Rivo's own servers
+- **Direct-to-API network tools** — DNS, DNS History, WHOIS, IP, and PageSpeed Insights lookups talk straight from your browser to the relevant public API, so requests never pass through Rivo's own servers
 - **On-device ML background removal** — client-side image segmentation via ONNX Runtime Web, no image ever uploaded anywhere
 - **DNS-over-HTTPS lookups** — queries Cloudflare's public DoH resolver directly for A, AAAA, CNAME, MX, NS, TXT, SOA, PTR, SRV, CAA, DS, and DNSKEY records
+- **Dated DNS History** — passive-DNS timeline of a domain's A, AAAA, MX, NS, SOA, SPF, TXT, and CNAME records via the APIFreaks DNS History API (10,000 free credits on signup, no card required)
 - **RDAP-based WHOIS** — domain and IP registration lookups via RDAP, rendered as a full plain-text dump, with registry-specific extensions surfaced for `.sg` (Verified ID status) and `.au` (auDA eligibility/status reason data), and a direct link to the registry's own WHOIS page for ccTLDs RDAP doesn't cover
-- **Cross-tool result caching (IndexedDB)** — DNS Lookup, WHOIS Lookup, Framework Detector, and PageSpeed Insights persist their last query's result in IndexedDB, so switching between tools (or reloading) restores what you were looking at instead of forcing a re-query. Manageable per-tool from Settings.
+- **Cross-tool result caching (IndexedDB)** — DNS Lookup, DNS History, WHOIS Lookup, Framework Detector, and PageSpeed Insights persist their last query's result in IndexedDB, so switching between tools (or reloading) restores what you were looking at instead of forcing a re-query. Manageable per-tool from Settings.
 - **Lighthouse-powered auditing** — PageSpeed Insights and Framework Detector both run real Lighthouse audits against a target URL for accurate, JS-aware results
 - **Interactive color tools** — color wheel with harmony exploration, palette extraction from images, WCAG contrast auto-fixing, and conversion across HEX/RGB/HSL/LAB/LCH/OKLAB/OKLCH
 - **Tailwind CSS toolset** — bidirectional Tailwind ⇄ CSS conversion, visual grid/flexbox/shadow builders, and a searchable utility class cheat sheet
@@ -48,7 +49,7 @@ A growing collection of fast, privacy-first tech utilities that run entirely in 
 ```
 src/
 ├── api/
-│   └── apiClient.js                 # Shared GET helpers (generic, DNS-over-HTTPS, RDAP)
+│   └── apiClient.js                 # Shared GET helpers (generic, DNS-over-HTTPS, RDAP, APIFreaks)
 ├── App.jsx / main.jsx                # Root app shell, routing, and lazy-loaded pages
 ├── components/
 │   ├── themes/
@@ -92,13 +93,16 @@ npm install
 
 ### Environment Variables
 
-Only the **PageSpeed Insights** and **Framework Detector** tools need configuration — everything else works out of the box with no keys. Create a `.env` file in the project root:
+Only the **PageSpeed Insights**, **Framework Detector**, and **DNS History** tools need configuration — everything else works out of the box with no keys. Create a `.env` file in the project root:
 
 ```bash
 VITE_PAGESPEED_API_KEY=your_google_pagespeed_api_key
+VITE_APIFREAKS_API_KEY=your_apifreaks_api_key
 ```
 
 Get a free key from the [Google Cloud Console](https://console.cloud.google.com) by enabling the PageSpeed Insights API.
+
+Get a free key from [apifreaks.com/signup](https://apifreaks.com/signup) — 10,000 free credits, no card required. The DNS History endpoint costs 10 credits per successful lookup (~1,000 free history checks); DNS History is the only tool in Rivo that isn't backed by a permanently free/unlimited public API, since no such thing exists for passive DNS data (SecurityTrails itself isn't free or unlimited past a small trial). Without a key, the DNS History tool shows a setup banner instead of erroring.
 
 ### Development
 
@@ -165,6 +169,7 @@ npm run preview
 | Tool         | Description                                                                                                                                                                                                                                                                                                               |
 | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | DNS Lookup   | Queries A, AAAA, CNAME, MX, NS, TXT, SOA, PTR, SRV, CAA, DS, and DNSKEY records via DNS-over-HTTPS. Last result cached in IndexedDB and persists across tool switches.                                                                                                                                                    |
+| DNS History  | Dated timeline of a domain's A, AAAA, MX, NS, SOA, SPF, TXT, and CNAME records via the APIFreaks DNS History API (passive DNS). Requires a free `VITE_APIFREAKS_API_KEY`. Last result cached in IndexedDB and persists across tool switches.                                                                              |
 | WHOIS Lookup | Domain/IP registration data via RDAP, rendered as a full plain-text dump. Surfaces `.sg` Verified ID status and `.au` auDA eligibility/status-reason fields where present, and links to the registry's own WHOIS page for ccTLDs without RDAP support. Last result cached in IndexedDB and persists across tool switches. |
 
 ### Web & Performance
@@ -216,7 +221,7 @@ The tool itself lives in `src/pages/YourTool.jsx` as a self-contained component 
 
 ### Persisting a Tool's Results
 
-If a tool's result should survive the user navigating to another tool and back (like DNS Lookup, WHOIS Lookup, Framework Detector, and PageSpeed Insights do), wire it up to `src/utils/toolResultCache.js`. It's backed by IndexedDB rather than `localStorage`, since localStorage's shared ~5-10MB origin quota is too easy to blow through once a few large tool results (a full RDAP dump, a Lighthouse report, etc.) stack up — every function below is `async` as a result.
+If a tool's result should survive the user navigating to another tool and back (like DNS Lookup, DNS History, WHOIS Lookup, Framework Detector, and PageSpeed Insights do), wire it up to `src/utils/toolResultCache.js`. It's backed by IndexedDB rather than `localStorage`, since localStorage's shared ~5-10MB origin quota is too easy to blow through once a few large tool results (a full RDAP dump, a Lighthouse report, etc.) stack up — every function below is `async` as a result.
 
 1. Add a unique id to `TOOL_CACHE_KEYS`, and a matching human-readable name in `TOOL_CACHE_LABELS` (shown in the Settings "Clear Tool Cache" dialog).
 2. After a successful query: `await saveToolCache(TOOL_CACHE_KEYS.YOUR_TOOL, { ...whatever state should be restored })`. Treat failures as a result too — call `saveToolCache` in the error path as well (with the data fields nulled out and an `error` message included) so a tool switch and back reflects the last _outcome_, not a stale success.
@@ -254,7 +259,7 @@ This project is deployed on [Netlify](https://netlify.com). To deploy your own f
 
 ## Privacy
 
-The home page footer links to an in-app **Data Privacy Policy** covering what runs on-device, what's fetched directly from external APIs (DNS, WHOIS, IP, PageSpeed), and what's stored locally (theme preference + per-tool result cache, both clearable from Settings). No accounts, no analytics, no tracking.
+The home page footer links to an in-app **Data Privacy Policy** covering what runs on-device, what's fetched directly from external APIs (DNS, DNS History, WHOIS, IP, PageSpeed), and what's stored locally (theme preference + per-tool result cache, both clearable from Settings). No accounts, no analytics, no tracking.
 
 ---
 
@@ -262,6 +267,7 @@ The home page footer links to an in-app **Data Privacy Policy** covering what ru
 
 - Background removal powered by [@imgly/background-removal](https://github.com/imgly/background-removal-js) and [ONNX Runtime Web](https://onnxruntime.ai)
 - DNS lookups via [Cloudflare DNS-over-HTTPS](https://developers.cloudflare.com/1.1.1.1/encryption/dns-over-https/)
+- DNS history via the [APIFreaks DNS History API](https://apifreaks.com/api/dns-history-lookup)
 - WHOIS data via [RDAP](https://rdap.org)
 - IP geolocation via [ipinfo.io](https://ipinfo.io)
 - Performance audits via [Google PageSpeed Insights](https://developers.google.com/speed/docs/insights/v5/get-started)
