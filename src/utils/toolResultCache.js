@@ -34,6 +34,7 @@ const CACHE_VERSION = 1
 export const TOOL_CACHE_KEYS = {
   WHOIS_LOOKUP: 'whoisLookup',
   DNS_LOOKUP: 'dnsLookup',
+  DNS_HISTORY_CHECKER: 'dnsHistoryChecker',
   FRAMEWORK_DETECTOR: 'frameworkDetector',
   PAGESPEED_INSIGHTS: 'pageSpeedInsights',
 }
@@ -41,6 +42,7 @@ export const TOOL_CACHE_KEYS = {
 export const TOOL_CACHE_LABELS = {
   [TOOL_CACHE_KEYS.WHOIS_LOOKUP]: 'WHOIS Lookup',
   [TOOL_CACHE_KEYS.DNS_LOOKUP]: 'DNS Lookup',
+  [TOOL_CACHE_KEYS.DNS_HISTORY_CHECKER]: 'DNS History Checker',
   [TOOL_CACHE_KEYS.FRAMEWORK_DETECTOR]: 'Framework Detector',
   [TOOL_CACHE_KEYS.PAGESPEED_INSIGHTS]: 'PageSpeed Insights',
 }

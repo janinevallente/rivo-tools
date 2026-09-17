@@ -22,6 +22,7 @@ const TailwindFlexboxGenerator = lazy(() => import('./pages/TailwindFlexboxGener
 const TailwindShadowGenerator = lazy(() => import('./pages/TailwindShadowGenerator'))
 const IpLookup = lazy(() => import('./pages/IpLookup'))
 const DnsLookup = lazy(() => import('./pages/DnsLookup'))
+const DnsHistoryChecker = lazy(() => import('./pages/DnsHistoryChecker'))
 const WhoisLookup = lazy(() => import('./pages/WhoisLookup'))
 const PageSpeedInsights = lazy(() => import('./pages/PageSpeedInsights'))
 const FrameworkDetector = lazy(() => import('./pages/FrameworkDetector'))
@@ -78,6 +79,7 @@ function App() {
       case 'tailwind-shadow-generator': return <TailwindShadowGenerator />
       case 'ip-lookup': return <IpLookup />
       case 'dns-lookup': return <DnsLookup />
+      case 'dns-history': return <DnsHistoryChecker />
       case 'whois-lookup': return <WhoisLookup />
       case 'password-generator': return <PasswordGenerator />
       case 'pagespeed-insights': return <PageSpeedInsights />

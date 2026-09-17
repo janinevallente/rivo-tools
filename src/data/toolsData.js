@@ -15,6 +15,7 @@ import {
   BoxSelect,
   MapPin,
   Globe,
+  History,
   KeyRound,
   Hash,
   Lock,
@@ -139,6 +140,12 @@ export const tools = [
     icon: ScrollText,
     label: 'WHOIS Lookup',
     description: 'Look up domain registration data via RDAP — domain info, registrar, and registrant contact.',
+  },
+  {
+    id: 'dns-history',
+    icon: History,
+    label: 'DNS History Checker',
+    description: 'See how a domain\'s DNS records have changed over time — dated A, AAAA, MX, NS, SOA, SPF, TXT, and CNAME snapshots.',
   },
   {
     id: 'pagespeed-insights',
