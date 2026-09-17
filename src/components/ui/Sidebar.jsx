@@ -31,7 +31,6 @@ import {
   Star,
   Gauge,
   Cpu,
-  CalendarClock
 } from 'lucide-react'
 
 const VERSION = __APP_VERSION__
@@ -78,7 +77,6 @@ const categories = [
     tools: [
       { id: 'dns-lookup', label: 'DNS Lookup', icon: Globe },
       { id: 'whois-lookup', label: 'WHOIS Lookup', icon: ScrollText },
-      { id: 'domain-lifecycle-checker', label: 'Domain Lifecycle Checker', icon: CalendarClock },
     ],
   },
   {

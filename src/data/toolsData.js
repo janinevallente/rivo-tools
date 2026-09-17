@@ -22,7 +22,6 @@ import {
   Star,
   Gauge,
   Cpu,
-  CalendarClock
 } from 'lucide-react'
 
 export const tools = [
@@ -142,12 +141,6 @@ export const tools = [
     description: 'Look up domain registration data via RDAP — domain info, registrar, and registrant contact.',
   },
   {
-    id: 'domain-lifecycle-checker',
-    icon: CalendarClock,
-    label: 'Domain Lifecycle Checker',
-    description: 'Check whether a domain is active, in its renewal grace period, redemption period, or pending delete, based on TLD-specific rules.',
-  },
-    {
     id: 'pagespeed-insights',
     icon: Gauge,
     label: 'PageSpeed Insights',
