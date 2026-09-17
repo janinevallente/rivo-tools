@@ -28,11 +28,6 @@ const DB_VERSION = 1
 const STORE_NAME = 'toolCache'
 const CACHE_VERSION = 1
 
-// The localStorage key prefix this cache used before it moved to IndexedDB.
-// Kept only so loadToolCache can transparently migrate anything left over
-// from before the switch — no new writes ever touch localStorage again.
-const LEGACY_STORAGE_PREFIX = 'rivo:toolCache:'
-
 // Register every tool that persists results here. Keeping this as a single
 // registry (rather than free-form strings scattered across pages) avoids
 // silent key collisions between tools.
@@ -96,22 +91,6 @@ function withStore(mode, fn) {
   }))
 }
 
-// One-time best-effort migration of a tool's old localStorage entry (if any)
-// into IndexedDB, run lazily the first time that tool's cache is loaded.
-// Silently no-ops if there's nothing to migrate or localStorage is unavailable.
-function migrateLegacyEntry(toolId) {
-  try {
-    const raw = window.localStorage.getItem(`${LEGACY_STORAGE_PREFIX}${toolId}`)
-    window.localStorage.removeItem(`${LEGACY_STORAGE_PREFIX}${toolId}`)
-    if (!raw) return null
-    const parsed = JSON.parse(raw)
-    if (!parsed || parsed.v !== CACHE_VERSION) return null
-    return parsed.data ?? null
-  } catch {
-    return null
-  }
-}
-
 // Utility to convert raw byte count to readable string (e.g. 1.2 KB, 450 B)
 export function formatBytes(bytes) {
   if (!bytes || bytes === 0) return '0 B'
@@ -149,16 +128,7 @@ export async function saveToolCache(toolId, data) {
 export async function loadToolCache(toolId) {
   try {
     const record = await withStore('readonly', store => store.get(toolId))
-    if (record && record.v === CACHE_VERSION) return record.data ?? null
-
-    // Nothing in IndexedDB yet — fall back to (and migrate) any entry left
-    // over from before this cache moved off localStorage.
-    const migrated = migrateLegacyEntry(toolId)
-    if (migrated !== null) {
-      await saveToolCache(toolId, migrated)
-      return migrated
-    }
-    return null
+    return (record && record.v === CACHE_VERSION) ? (record.data ?? null) : null
   } catch {
     return null
   }
