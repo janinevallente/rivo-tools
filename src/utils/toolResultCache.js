@@ -28,9 +28,7 @@ const DB_VERSION = 1
 const STORE_NAME = 'toolCache'
 const CACHE_VERSION = 1
 
-// Register every tool that persists results here. Keeping this as a single
-// registry (rather than free-form strings scattered across pages) avoids
-// silent key collisions between tools.
+// Register every active tool that persists results here.
 export const TOOL_CACHE_KEYS = {
   WHOIS_LOOKUP: 'whoisLookup',
   DNS_LOOKUP: 'dnsLookup',
@@ -165,6 +163,7 @@ export async function getCachedToolDetails() {
 
     return records.map(record => ({
       id: record.toolId,
+      label: TOOL_CACHE_LABELS[record.toolId] || record.toolId,
       bytes: estimateRecordSize(record),
     }))
   } catch {
@@ -190,12 +189,9 @@ export async function clearToolCaches(toolIds) {
   }
 }
 
-// Clears every tool's cached result at once (used by Settings -> "Clear
-// Tool Cache"). Only touches the dedicated toolCache IndexedDB object store,
-// so this can never affect unrelated storage — most importantly the
-// "rivo-theme" key, which lives in localStorage under a completely
-// different name/mechanism and is never read or written by this file.
-// Returns true on success, false if clearing failed outright.
+// Universal clear: Completely empties the entire IndexedDB object store.
+// Automatically deletes current, legacy, and removed tool data.
+// Safe for user settings like "rivo-theme", which live separately in localStorage.
 export async function clearAllToolCaches() {
   try {
     await withStore('readwrite', store => store.clear())
