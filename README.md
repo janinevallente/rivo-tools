@@ -6,7 +6,7 @@ A growing collection of fast, privacy-first tech utilities that run entirely in 
 
 ## Features
 
-- **24 tools across 7 categories** — image & asset tools, color utilities, Tailwind CSS helpers, network diagnostics, web performance auditing, security utilities, and quick references
+- **24 tools across 8 categories** — image & asset tools, color utilities, Tailwind CSS helpers, network diagnostics, domain tools, web performance auditing, security utilities, and quick references
 - **Privacy-first, local-first** — most tools process everything on-device; nothing you feed them ever leaves your machine
 - **Direct-to-API network tools** — DNS, WHOIS, IP, and PageSpeed Insights lookups talk straight from your browser to the relevant public API, so requests never pass through Rivo's own servers
 - **On-device ML background removal** — client-side image segmentation via ONNX Runtime Web, no image ever uploaded anywhere
@@ -156,11 +156,16 @@ npm run preview
 
 ### Network
 
-| Tool              | Description                                                                                                                                                                                                                                                                                                               |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| IP Address Lookup | Your public IP, ISP, and geolocation, with an interactive map.                                                                                                                                                                                                                                                            |
-| DNS Lookup        | Queries A, AAAA, CNAME, MX, NS, TXT, SOA, PTR, SRV, CAA, DS, and DNSKEY records via DNS-over-HTTPS. Last result cached in IndexedDB and persists across tool switches.                                                                                                                                                    |
-| WHOIS Lookup      | Domain/IP registration data via RDAP, rendered as a full plain-text dump. Surfaces `.sg` Verified ID status and `.au` auDA eligibility/status-reason fields where present, and links to the registry's own WHOIS page for ccTLDs without RDAP support. Last result cached in IndexedDB and persists across tool switches. |
+| Tool              | Description                                                    |
+| ----------------- | -------------------------------------------------------------- |
+| IP Address Lookup | Your public IP, ISP, and geolocation, with an interactive map. |
+
+### Domain Tools
+
+| Tool         | Description                                                                                                                                                                                                                                                                                                               |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| DNS Lookup   | Queries A, AAAA, CNAME, MX, NS, TXT, SOA, PTR, SRV, CAA, DS, and DNSKEY records via DNS-over-HTTPS. Last result cached in IndexedDB and persists across tool switches.                                                                                                                                                    |
+| WHOIS Lookup | Domain/IP registration data via RDAP, rendered as a full plain-text dump. Surfaces `.sg` Verified ID status and `.au` auDA eligibility/status-reason fields where present, and links to the registry's own WHOIS page for ccTLDs without RDAP support. Last result cached in IndexedDB and persists across tool switches. |
 
 ### Web & Performance
 
@@ -220,7 +225,7 @@ If a tool's result should survive the user navigating to another tool and back (
 
 Other exports worth knowing about: `listCachedToolIds()` / `listCachedToolsWithSize()` (used by the Settings dialog to show only tools with actual cached data, plus an estimated byte size for each), and `clearToolCaches(toolIds)` / `clearAllToolCaches()` for batch/full clears.
 
-Cached data is versioned internally, so a shape change to what you save won't break on old cached entries — they're just ignored. A one-time migration also runs automatically the first time a tool's cache is loaded, pulling in anything left over from before this moved off `localStorage`. Everything is wrapped in try/catch and no-ops on failure (private browsing, storage quota, IndexedDB unavailable, etc.), so it's safe to add without extra error handling on the caller's side.
+Cached data is versioned internally, so a shape change to what you save won't break on old cached entries — they're just ignored. Everything is wrapped in try/catch and no-ops on failure (private browsing, storage quota, IndexedDB unavailable, etc.), so it's safe to add without extra error handling on the caller's side.
 
 ---
 
