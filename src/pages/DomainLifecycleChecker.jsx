@@ -83,14 +83,46 @@ function formatLongDate(iso) {
   }
 }
 
-// Format time remaining as "X years, X months and X days" or "X days" etc.
-function formatTimeRemaining(days) {
+// Format time remaining with accurate month calculation using actual dates
+function formatTimeRemaining(days, fromDate, toDate) {
   if (days === 0) return 'Today'
   if (days < 0) return `${Math.abs(days)} days ago`
   
+  // If we have the actual dates, calculate precisely
+  if (fromDate && toDate) {
+    let years = toDate.getFullYear() - fromDate.getFullYear()
+    let months = toDate.getMonth() - fromDate.getMonth()
+    let days = toDate.getDate() - fromDate.getDate()
+    
+    // Adjust for negative days
+    if (days < 0) {
+      months--
+      const prevMonth = new Date(toDate.getFullYear(), toDate.getMonth(), 0)
+      days += prevMonth.getDate()
+    }
+    
+    // Adjust for negative months
+    if (months < 0) {
+      years--
+      months += 12
+    }
+    
+    const parts = []
+    if (years > 0) parts.push(`${years} year${years > 1 ? 's' : ''}`)
+    if (months > 0) parts.push(`${months} month${months > 1 ? 's' : ''}`)
+    if (days > 0) parts.push(`${days} day${days > 1 ? 's' : ''}`)
+    
+    if (parts.length === 0) return 'Today'
+    if (parts.length === 1) return parts[0]
+    if (parts.length === 2) return parts.join(' and ')
+    return parts.slice(0, -1).join(', ') + ' and ' + parts[parts.length - 1]
+  }
+  
+  // Fallback to day-based calculation if dates aren't available
   const years = Math.floor(days / 365)
-  const months = Math.floor((days % 365) / 30)
-  const remainingDays = days % 30
+  const remainingAfterYears = days % 365
+  const months = Math.floor(remainingAfterYears / 30.44)
+  const remainingDays = Math.round(remainingAfterYears - (months * 30.44))
   
   const parts = []
   if (years > 0) parts.push(`${years} year${years > 1 ? 's' : ''}`)
@@ -151,6 +183,7 @@ function computeLifecycle(tld, expiryIso) {
       status: 'Active',
       daysLabel: 'EXPIRING IN',
       daysValue: daysUntilExpiry,
+      daysDisplay: formatTimeRemaining(daysUntilExpiry, today, expiryDate),
       remarks: 'Customer can renew the domain before the expiry date.',
     }
   }
