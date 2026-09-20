@@ -77,7 +77,7 @@ export default function DnsHistoryChecker() {
   useEffect(() => {
     let cancelled = false
     ;(async () => {
-      const cached = await loadToolCache(TOOL_CACHE_KEYS.DNS_HISTORY)
+      const cached = await loadToolCache(TOOL_CACHE_KEYS.DNS_HISTORY_CHECKER)
       if (cancelled || !cached) return
       if (cached.inputValue) setInputValue(cached.inputValue)
       if (cached.domain) setDomain(cached.domain)
