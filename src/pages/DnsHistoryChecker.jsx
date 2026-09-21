@@ -127,7 +127,7 @@ export default function DnsHistoryChecker() {
       setPage(data.currentPage ?? 1)
       setTotalPages(data.totalPages ?? 1)
       setTotalRecords(data.totalRecords ?? sorted.length)
-      await saveToolCache(TOOL_CACHE_KEYS.DNS_HISTORY, {
+      await saveToolCache(TOOL_CACHE_KEYS.DNS_HISTORY_CHECKER, {
         inputValue: target, domain: target, recordType,
         snapshots: sorted, page: data.currentPage ?? 1, totalPages: data.totalPages ?? 1, totalRecords: data.totalRecords ?? sorted.length,
         error: null,
@@ -136,7 +136,7 @@ export default function DnsHistoryChecker() {
       if (err.name === 'AbortError') return
       const message = err.notFound ? err.message : (err.message ?? 'DNS history lookup failed.')
       setError(message)
-      await saveToolCache(TOOL_CACHE_KEYS.DNS_HISTORY, {
+      await saveToolCache(TOOL_CACHE_KEYS.DNS_HISTORY_CHECKER, {
         inputValue: target, domain: target, recordType,
         snapshots: null, page: 1, totalPages: 1, totalRecords: 0, error: message,
       })
@@ -154,7 +154,7 @@ export default function DnsHistoryChecker() {
       const next = [...(data.historicalDnsRecords ?? [])].sort((a, b) => b.queryTime.localeCompare(a.queryTime))
       setSnapshots(prev => {
         const merged = [...(prev ?? []), ...next]
-        saveToolCache(TOOL_CACHE_KEYS.DNS_HISTORY, {
+        saveToolCache(TOOL_CACHE_KEYS.DNS_HISTORY_CHECKER, {
           inputValue, domain, recordType,
           snapshots: merged, page: data.currentPage ?? page + 1, totalPages: data.totalPages ?? totalPages, totalRecords,
           error: null,
