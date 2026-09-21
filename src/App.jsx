@@ -79,7 +79,7 @@ function App() {
       case 'tailwind-shadow-generator': return <TailwindShadowGenerator />
       case 'ip-lookup': return <IpLookup />
       case 'dns-lookup': return <DnsLookup />
-      case 'dns-history': return <DnsHistoryChecker />
+      case 'dns-history-checker': return <DnsHistoryChecker />
       case 'whois-lookup': return <WhoisLookup />
       case 'password-generator': return <PasswordGenerator />
       case 'pagespeed-insights': return <PageSpeedInsights />

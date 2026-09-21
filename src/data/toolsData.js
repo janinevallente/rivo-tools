@@ -142,7 +142,7 @@ export const tools = [
     description: 'Look up domain registration data via RDAP — domain info, registrar, and registrant contact.',
   },
   {
-    id: 'dns-history',
+    id: 'dns-history-checker',
     icon: History,
     label: 'DNS History Checker',
     description: 'See how a domain\'s DNS records have changed over time — dated A, AAAA, MX, NS, SOA, SPF, TXT, and CNAME snapshots.',

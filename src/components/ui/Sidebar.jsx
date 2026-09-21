@@ -78,7 +78,7 @@ const categories = [
     tools: [
       { id: 'dns-lookup', label: 'DNS Lookup', icon: Globe },
       { id: 'whois-lookup', label: 'WHOIS Lookup', icon: ScrollText },
-      { id: 'dns-history', label: 'DNS History Checker', icon: History },
+      { id: 'dns-history-checker', label: 'DNS History Checker', icon: History },
     ],
   },
   {
