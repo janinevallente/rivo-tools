@@ -17,10 +17,15 @@ const defaultIcon = L.icon({
   shadowSize: [41, 41],
 })
 
-// Dark CARTO basemap tiles to match the app's dark theme
-const TILE_URL = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+// Esri Dark Gray Canvas — free, keyless dark basemap.
+// Two layers: base fill + reference overlay (labels/borders).
+const BASE_TILE_URL = 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}'
+const REFERENCE_TILE_URL = 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}'
 const TILE_ATTRIBUTION =
-  '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+  'Tiles &copy; <a href="https://www.esri.com">Esri</a> &mdash; Esri, HERE, Garmin, &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, and the GIS user community'
+// Native tiles stop at z16; Leaflet upsamples past that instead of going blank.
+const TILE_MAX_NATIVE_ZOOM = 16
+const TILE_MAX_ZOOM = 18
 
 export default function IpLookupMap({ latitude, longitude, label }) {
   const position = [latitude, longitude]
@@ -33,7 +38,17 @@ export default function IpLookupMap({ latitude, longitude, label }) {
       style={{ height: '100%', width: '100%', background: 'var(--color-background)' }}
       key={`${latitude}-${longitude}`}
     >
-      <TileLayer url={TILE_URL} attribution={TILE_ATTRIBUTION} />
+      <TileLayer
+        url={BASE_TILE_URL}
+        attribution={TILE_ATTRIBUTION}
+        maxNativeZoom={TILE_MAX_NATIVE_ZOOM}
+        maxZoom={TILE_MAX_ZOOM}
+      />
+      <TileLayer
+        url={REFERENCE_TILE_URL}
+        maxNativeZoom={TILE_MAX_NATIVE_ZOOM}
+        maxZoom={TILE_MAX_ZOOM}
+      />
       <Marker position={position} icon={defaultIcon}>
         {label && <Popup>{label}</Popup>}
       </Marker>
