@@ -133,7 +133,7 @@ export const tools = [
     id: 'dns-lookup',
     icon: Globe,
     label: 'DNS Lookup',
-    description: 'Query A, AAAA, CNAME, MX, NS, TXT, SOA, PTR, SRV, CAA, DS, and DNSKEY records for any domain via DNS-over-HTTPS.',
+    description: 'Query A, AAAA, CNAME, MX, NS, TXT, SOA, PTR, SRV, CAA, DS, and DNSKEY records — plus DMARC and DKIM — for any domain via DNS-over-HTTPS.',
   },
   {
     id: 'whois-lookup',
