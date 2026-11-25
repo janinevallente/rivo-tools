@@ -9,10 +9,12 @@ import {
   Loader2,
   CircleX,
   Key,
+  Radio,
+  Layers,
 } from 'lucide-react'
 import { SyncLoader } from 'react-spinners'
 import PageHeader from '../components/ui/PageHeader'
-import { getApiFreaksRequest } from '../api/apiClient'
+import { getApiFreaksRequest, getRequest } from '../api/apiClient'
 import { TOOL_CACHE_KEYS, saveToolCache, loadToolCache } from '../utils/toolResultCache'
 
 const APIFREAKS_API_KEY = import.meta.env.VITE_APIFREAKS_API_KEY || ''
@@ -39,6 +41,65 @@ function extractRecordValue(rec) {
   const match = type ? raw.match(new RegExp(`IN\\s+${type}\\s+([\\s\\S]*)$`, 'i')) : null
   const value = (match ? match[1] : raw).trim().replace(/\.$/, '')
   return value || raw
+}
+
+
+const DOH_URL = 'https://cloudflare-dns.com/dns-query'
+const DOH_TYPE_CODES = { A: 1, AAAA: 28, MX: 15, NS: 2, SOA: 6, TXT: 16, CNAME: 5, SPF: 16 }
+
+// Live (current) records for the selected type, via Cloudflare DNS-over-HTTPS.
+async function fetchCurrentRecords(domain, type, signal) {
+  const queryType = type === 'SPF' ? 'TXT' : type
+  const { data, success } = await getRequest(
+    DOH_URL,
+    { name: domain, type: queryType },
+    { Accept: 'application/dns-json' },
+    { signal }
+  )
+  if (!success) throw new Error('Could not fetch current DNS records.')
+  const code = DOH_TYPE_CODES[type]
+  return (data.Answer ?? [])
+    .filter(a => a.type === code)
+    .map(a => {
+      let value = a.data ?? ''
+      if (type === 'TXT' || type === 'SPF') value = value.replace(/^"|"$/g, '').replace(/"\s+"/g, '')
+      else value = value.replace(/\.$/, '')
+      return { value, ttl: a.TTL }
+    })
+    .filter(r => type !== 'SPF' || /^v=spf1/i.test(r.value))
+}
+
+function parseDate(str) {
+  const d = new Date(String(str).replace(' ', 'T'))
+  return Number.isNaN(d.getTime()) ? null : d
+}
+
+function formatDate(str) {
+  const d = parseDate(str)
+  if (!d) return str
+  return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+}
+
+function timeAgo(str) {
+  const d = parseDate(str)
+  if (!d) return ''
+  const days = Math.floor((Date.now() - d.getTime()) / 86400000)
+  if (days < 1) return 'today'
+  if (days < 31) return `${days} day${days > 1 ? 's' : ''} ago`
+  if (days < 365) { const m = Math.floor(days / 30); return `${m} month${m > 1 ? 's' : ''} ago` }
+  const y = Math.floor(days / 365)
+  const m = Math.floor((days % 365) / 30)
+  return `${y} yr${y > 1 ? 's' : ''}${m ? ` ${m} mo` : ''} ago`
+}
+
+function formatTtl(ttl) {
+  const n = Number(ttl)
+  if (!Number.isFinite(n)) return { main: String(ttl ?? '—'), sub: '' }
+  let sub = `${n} sec`
+  if (n >= 86400 && n % 86400 === 0) sub = `${n / 86400} day${n / 86400 > 1 ? 's' : ''}`
+  else if (n >= 3600 && n % 3600 === 0) sub = `${n / 3600} hr${n / 3600 > 1 ? 's' : ''}`
+  else if (n >= 60 && n % 60 === 0) sub = `${n / 60} min`
+  return { main: String(n), sub }
 }
 
 async function fetchDnsHistoryPage(domain, type, page, signal) {
@@ -70,6 +131,8 @@ export default function DnsHistoryChecker() {
   const [totalRecords, setTotalRecords] = useState(0)
   const [loading, setLoading] = useState(false)
   const [loadingMore, setLoadingMore] = useState(false)
+  const [currentRecords, setCurrentRecords] = useState(null)
+  const [currentType, setCurrentType] = useState('A')
   const [error, setError] = useState(null)
   const [copiedKey, setCopiedKey] = useState(null)
   const abortRef = useRef(null)
@@ -83,6 +146,8 @@ export default function DnsHistoryChecker() {
       if (cached.domain) setDomain(cached.domain)
       if (cached.recordType) setRecordType(cached.recordType)
       setSnapshots(cached.snapshots ?? null)
+      setCurrentRecords(cached.currentRecords ?? null)
+      setCurrentType(cached.recordType ?? 'A')
       setPage(cached.page ?? 1)
       setTotalPages(cached.totalPages ?? 1)
       setTotalRecords(cached.totalRecords ?? 0)
@@ -95,6 +160,7 @@ export default function DnsHistoryChecker() {
     const target = normaliseHostname(inputValue)
 
     setSnapshots(null)
+    setCurrentRecords(null)
     setPage(1)
     setTotalPages(1)
     setTotalRecords(0)
@@ -121,7 +187,12 @@ export default function DnsHistoryChecker() {
     setDomain(target)
 
     try {
-      const data = await fetchDnsHistoryPage(target, recordType, 1, controller.signal)
+      const [data, current] = await Promise.all([
+        fetchDnsHistoryPage(target, recordType, 1, controller.signal),
+        fetchCurrentRecords(target, recordType, controller.signal).catch(() => []),
+      ])
+      setCurrentRecords(current)
+      setCurrentType(recordType)
       const sorted = [...(data.historicalDnsRecords ?? [])].sort((a, b) => b.queryTime.localeCompare(a.queryTime))
       setSnapshots(sorted)
       setPage(data.currentPage ?? 1)
@@ -129,7 +200,7 @@ export default function DnsHistoryChecker() {
       setTotalRecords(data.totalRecords ?? sorted.length)
       await saveToolCache(TOOL_CACHE_KEYS.DNS_HISTORY_CHECKER, {
         inputValue: target, domain: target, recordType,
-        snapshots: sorted, page: data.currentPage ?? 1, totalPages: data.totalPages ?? 1, totalRecords: data.totalRecords ?? sorted.length,
+        snapshots: sorted, currentRecords: current, page: data.currentPage ?? 1, totalPages: data.totalPages ?? 1, totalRecords: data.totalRecords ?? sorted.length,
         error: null,
       })
     } catch (err) {
@@ -156,7 +227,7 @@ export default function DnsHistoryChecker() {
         const merged = [...(prev ?? []), ...next]
         saveToolCache(TOOL_CACHE_KEYS.DNS_HISTORY_CHECKER, {
           inputValue, domain, recordType,
-          snapshots: merged, page: data.currentPage ?? page + 1, totalPages: data.totalPages ?? totalPages, totalRecords,
+          snapshots: merged, currentRecords, page: data.currentPage ?? page + 1, totalPages: data.totalPages ?? totalPages, totalRecords,
           error: null,
         })
         return merged
@@ -168,7 +239,7 @@ export default function DnsHistoryChecker() {
     } finally {
       setLoadingMore(false)
     }
-  }, [domain, recordType, page, totalPages, totalRecords, inputValue, loadingMore])
+  }, [domain, recordType, page, totalPages, totalRecords, inputValue, loadingMore, currentRecords])
 
   const handleKeyDown = (e) => { if (e.key === 'Enter') runCheck() }
 
@@ -178,12 +249,10 @@ export default function DnsHistoryChecker() {
     setTimeout(() => setCopiedKey(null), 1500)
   }, [])
 
-  const allRows = snapshots?.flatMap((snapshot) =>
-    (snapshot.dnsRecords ?? []).map((rec) => ({
-      ...rec,
-      queryTime: snapshot.queryTime,
-    }))
+  const allRows = snapshots?.flatMap(snap =>
+    (snap.dnsRecords ?? []).map(rec => ({ ...rec, queryTime: snap.queryTime, value: extractRecordValue(rec) }))
   ) ?? []
+  const currentValues = new Set((currentRecords ?? []).map(r => r.value.toLowerCase()))
 
   return (
     <div className="mx-auto px-4 sm:px-6 md:px-10 py-6 sm:py-8 font-poppins">
@@ -275,50 +344,108 @@ export default function DnsHistoryChecker() {
         </div>
       )}
 
-      {/* Scrollable Table View */}
+      {/* Results */}
       {snapshots && !loading && !error && (
-        <div className="flex flex-col gap-4">
-          <p className="text-xs text-text m-0">
-            {totalRecords} snapshot{totalRecords === 1 ? '' : 's'} found for <span className="font-mono text-textHeader">{domain}</span>
-          </p>
-
+        <div className="flex flex-col gap-5">
+          {/* Current DNS record */}
           <div className="bg-backgroundCard border border-borderColor rounded-2xl overflow-hidden">
-            {/* Scroll Container */}
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs border-collapse min-w-[550px]">
-                <thead>
-                  <tr className="bg-backgroundColor">
-                    <th className="text-left font-semibold text-text uppercase tracking-wide px-4 py-3 border-b border-borderColor whitespace-nowrap w-20">Type</th>
-                    <th className="text-left font-semibold text-text uppercase tracking-wide px-4 py-3 border-b border-borderColor whitespace-nowrap w-20">TTL</th>
-                    <th className="text-left font-semibold text-text uppercase tracking-wide px-4 py-3 border-b border-borderColor whitespace-nowrap">Value</th>
-                    <th className="text-left font-semibold text-text uppercase tracking-wide px-4 py-3 border-b border-borderColor whitespace-nowrap w-36">Date</th>
-                    <th className="px-3 py-3 border-b border-borderColor w-8" />
-                  </tr>
-                </thead>
-                <tbody>
-                  {allRows.map((rec, i) => {
-                    const value = extractRecordValue(rec)
-                    const rowKey = `${rec.queryTime}-${rec.dnsType}-${i}`
-                    return (
-                      <tr key={rowKey} className="hover:bg-backgroundColor/50 transition-colors">
-                        <td className="px-4 py-2.5 border-b border-borderColor text-textHeader font-mono align-top whitespace-nowrap">{rec.dnsType}</td>
-                        <td className="px-4 py-2.5 border-b border-borderColor text-textHeader font-mono align-top whitespace-nowrap">{rec.ttl}</td>
-                        <td className="px-4 py-2.5 border-b border-borderColor text-textHeader font-mono align-top break-all min-w-[200px]">{value}</td>
-                        <td className="px-4 py-2.5 border-b border-borderColor text-text font-mono align-top whitespace-nowrap">{rec.queryTime}</td>
-                        <td className="px-3 py-2.5 border-b border-borderColor align-top">
-                          <button
-                            onClick={() => copy(value, rowKey)}
-                            className="text-text hover:text-accent transition-colors bg-transparent border-none cursor-pointer p-0.5"
-                            title="Copy value"
-                          >
-                            {copiedKey === rowKey ? <Check size={12} className="text-green-400" /> : <Copy size={12} />}
-                          </button>
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
+            <div className="flex items-center justify-between gap-2 px-4 py-3 border-b border-borderColor bg-backgroundColor">
+              <div className="flex items-center gap-2">
+                <Radio size={14} className="text-green-400" />
+                <h2 className="text-sm font-semibold text-textHeader m-0">Current {currentType} records</h2>
+              </div>
+              <span className="text-[10px] uppercase tracking-wide font-semibold text-green-400 bg-green-500/10 border border-green-400/30 rounded-full px-2 py-0.5">Live</span>
+            </div>
+            {currentRecords && currentRecords.length > 0 ? (
+              <ul className="list-none m-0 p-0">
+                {currentRecords.map((rec, i) => {
+                  const key = `current-${i}`
+                  return (
+                    <li key={key} className="flex items-start gap-3 px-4 py-2.5 border-b last:border-b-0 border-borderColor">
+                      <span className="font-mono text-xs text-textHeader break-all flex-1">{rec.value}</span>
+                      <span className="font-mono text-[11px] text-text whitespace-nowrap">TTL {rec.ttl}</span>
+                      <button
+                        onClick={() => copy(rec.value, key)}
+                        className="text-text hover:text-accent transition-colors bg-transparent border-none cursor-pointer p-0.5"
+                        title="Copy value"
+                      >
+                        {copiedKey === key ? <Check size={12} className="text-green-400" /> : <Copy size={12} />}
+                      </button>
+                    </li>
+                  )
+                })}
+              </ul>
+            ) : (
+              <p className="text-xs text-text m-0 px-4 py-4">
+                No current {currentType} records found for <span className="font-mono text-textHeader">{domain}</span>.
+              </p>
+            )}
+          </div>
+
+          {/* Historical records */}
+          <div>
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+              <div className="flex items-center gap-2">
+                <History size={14} className="text-accent" />
+                <h2 className="text-sm font-semibold text-textHeader m-0">Historical {currentType} records</h2>
+              </div>
+              <p className="text-xs text-text m-0 flex items-center gap-1.5">
+                <Layers size={12} />
+                {totalRecords} snapshot{totalRecords === 1 ? '' : 's'} · newest first
+              </p>
+            </div>
+
+            <div className="bg-backgroundCard border border-borderColor rounded-2xl overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs border-collapse min-w-[640px]">
+                  <thead>
+                    <tr className="bg-backgroundColor">
+                      <th className="text-left font-semibold text-text uppercase tracking-wide px-4 py-3 border-b border-borderColor whitespace-nowrap w-40">Date recorded</th>
+                      <th className="text-left font-semibold text-text uppercase tracking-wide px-4 py-3 border-b border-borderColor whitespace-nowrap w-20">Type</th>
+                      <th className="text-left font-semibold text-text uppercase tracking-wide px-4 py-3 border-b border-borderColor whitespace-nowrap">Value</th>
+                      <th className="text-left font-semibold text-text uppercase tracking-wide px-4 py-3 border-b border-borderColor whitespace-nowrap w-28">TTL</th>
+                      <th className="px-3 py-3 border-b border-borderColor w-8" />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {allRows.map((rec, i) => {
+                      const rowKey = `${rec.queryTime}-${rec.dnsType}-${i}`
+                      const ttl = formatTtl(rec.ttl)
+                      const isCurrent = currentValues.has(rec.value.toLowerCase())
+                      return (
+                        <tr key={rowKey} className="hover:bg-backgroundColor/50 transition-colors">
+                          <td className="px-4 py-2.5 border-b border-borderColor align-top whitespace-nowrap">
+                            <div className="text-textHeader font-medium">{formatDate(rec.queryTime)}</div>
+                            <div className="text-[11px] text-text">{timeAgo(rec.queryTime)}</div>
+                          </td>
+                          <td className="px-4 py-2.5 border-b border-borderColor align-top">
+                            <span className="inline-block font-mono text-[11px] font-semibold text-accent bg-accent/10 rounded-md px-1.5 py-0.5">{rec.dnsType}</span>
+                          </td>
+                          <td className="px-4 py-2.5 border-b border-borderColor align-top min-w-[220px]">
+                            <div className="flex flex-wrap items-start gap-2">
+                              <span className="text-textHeader font-mono break-all">{rec.value}</span>
+                              {isCurrent && <span className="shrink-0 text-[10px] uppercase font-semibold text-green-400 bg-green-500/10 border border-green-400/30 rounded-full px-1.5 py-px">Live now</span>}
+                            </div>
+                          </td>
+                          <td className="px-4 py-2.5 border-b border-borderColor align-top whitespace-nowrap">
+                            <div className="text-textHeader font-mono">{ttl.main}</div>
+                            {ttl.sub && <div className="text-[11px] text-text">{ttl.sub}</div>}
+                          </td>
+                          <td className="px-3 py-2.5 border-b border-borderColor align-top">
+                            <button
+                              onClick={() => copy(rec.value, rowKey)}
+                              className="text-text hover:text-accent transition-colors bg-transparent border-none cursor-pointer p-0.5"
+                              title="Copy value"
+                            >
+                              {copiedKey === rowKey ? <Check size={12} className="text-green-400" /> : <Copy size={12} />}
+                            </button>
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
 
@@ -326,7 +453,7 @@ export default function DnsHistoryChecker() {
             <button
               onClick={loadMore}
               disabled={loadingMore}
-              className="self-center flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium bg-backgroundCard border border-borderColor text-textHeader cursor-pointer hover:border-accent transition-colors disabled:opacity-50 mt-1"
+              className="self-center flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium bg-backgroundCard border border-borderColor text-textHeader cursor-pointer hover:border-accent transition-colors disabled:opacity-50"
             >
               {loadingMore ? <Loader2 size={14} className="animate-spin" /> : null}
               Load more ({page} of {totalPages})
